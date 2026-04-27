@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 const nav = [
@@ -26,8 +27,15 @@ export function TopBar() {
     <>
       <header className="sticky top-0 z-40 flex h-12 w-full shrink-0 items-center bg-[#102f4b] px-4 md:px-8">
         <div className="flex w-full min-w-0 items-center gap-4 md:gap-6">
-          <Link href="/setup" className="shrink-0 text-[2rem] font-extrabold leading-none tracking-[0.03em] text-white">
-            KIWI <span aria-hidden="true">🥝</span>
+          <Link href="/setup" className="shrink-0" aria-label="Go to KIWI setup">
+            <Image
+              src="/kiwi-bird.png"
+              alt="KIWI"
+              width={132}
+              height={40}
+              priority
+              className="h-10 w-auto"
+            />
           </Link>
           {showFullTitle ? (
             <span className="hidden min-w-0 truncate text-[1.05rem] font-semibold text-white/95 md:block">
