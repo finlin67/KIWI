@@ -1,0 +1,119 @@
+name: Windows Release Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: Optional release name override
+        required: false
+        default: ""
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute package metadata
+        id: meta
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $version = "${{ github.ref_name }}"
+          } else {
+            $shortSha = "${{ github.sha }}".Substring(0, 7)
+            $version = "dev-$shortSha"
+          }
+
+          $inputName = "${{ github.event.inputs.release_name }}"
+          if ([string]::IsNullOrWhiteSpace($inputName)) {
+            $releaseName = "KIWI $version"
+          } else {
+            $releaseName = $inputName
+          }
+
+          $zipName = "KIWI-windows-portable-$version.zip"
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "release_name=$releaseName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "zip_name=$zipName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Build portable release folder
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $repoRoot = "${{ github.workspace }}"
+          $distRoot = Join-Path $repoRoot "dist"
+          $bundleRoot = Join-Path $distRoot "KIWI"
+
+          if (Test-Path $bundleRoot) {
+            Remove-Item -Path $bundleRoot -Recurse -Force
+          }
+          New-Item -Path $bundleRoot -ItemType Directory | Out-Null
+
+          $excludeDirs = @(
+            (Join-Path $repoRoot ".git"),
+            (Join-Path $repoRoot ".github"),
+            (Join-Path $repoRoot "dist"),
+            (Join-Path $repoRoot "KIWI_Web\.next"),
+            (Join-Path $repoRoot "KIWI_Web\node_modules"),
+            (Join-Path $repoRoot "kiwi_desktop\.venv"),
+            (Join-Path $repoRoot "kiwi_desktop\api\node_modules")
+          )
+
+          $excludeArgs = @()
+          foreach ($dir in $excludeDirs) {
+            $excludeArgs += $dir
+          }
+
+          $null = robocopy $repoRoot $bundleRoot /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP /XD $excludeArgs
+          if ($LASTEXITCODE -ge 8) {
+            throw "robocopy failed with exit code $LASTEXITCODE"
+          }
+
+          Get-ChildItem -Path $bundleRoot -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
+          Get-ChildItem -Path $bundleRoot -Recurse -File -Include "*.pyc" | Remove-Item -Force
+
+          $versionFile = Join-Path $bundleRoot "RELEASE_INFO.txt"
+          @(
+            "Release: ${{ steps.meta.outputs.version }}",
+            "Source commit: ${{ github.sha }}",
+            "Built on: $(Get-Date -Format o)",
+            "",
+            "Start KIWI: double-click start_kiwi.bat",
+            "Stop KIWI: double-click stop_kiwi.bat",
+            "Quick start: QUICK_START_WINDOWS.md"
+          ) | Set-Content -Path $versionFile -Encoding UTF8
+
+      - name: Create release ZIP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $repoRoot = "${{ github.workspace }}"
+          $zipPath = Join-Path $repoRoot ("dist\${{ steps.meta.outputs.zip_name }}")
+          if (Test-Path $zipPath) {
+            Remove-Item -Path $zipPath -Force
+          }
+          Compress-Archive -Path (Join-Path $repoRoot "dist\KIWI\*") -DestinationPath $zipPath -CompressionLevel Optimal
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.zip_name }}
+          path: dist/${{ steps.meta.outputs.zip_name }}
+
+      - name: Publish GitHub Release asset
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.meta.outputs.release_name }}
+          files: dist/${{ steps.meta.outputs.zip_name }}

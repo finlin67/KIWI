@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Command nvm -ErrorAction SilentlyContinue; ls \"$env:APPDATA\\\\nvm\" -ErrorAction SilentlyContinue; ls \"$env:ProgramFiles\\\\nvm\" -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command winget -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command fnm -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command volta -ErrorAction SilentlyContinue)",
+      "PowerShell(npm show better-sqlite3 versions --json 2>$null)"
+    ]
+  }
+}

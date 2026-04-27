@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap');
+
+:root {
+  /* Colors */
+  --kiwi-navy: #1e3a8a;
+  --kiwi-blue: #3b5bdb;
+  --kiwi-blue-light: #dbe4ff;
+  --kiwi-blue-pale: #eef2ff;
+  --kiwi-green: #2f9e44;
+  --kiwi-green-light: #d3f9d8;
+  --kiwi-amber: #e67700;
+  --kiwi-amber-light: #fff3bf;
+  --kiwi-red: #c92a2a;
+  --kiwi-red-light: #ffe3e3;
+
+  /* Neutrals */
+  --kiwi-bg: #f3f4f8;
+  --kiwi-bg-card: #ffffff;
+  --kiwi-border: #dde1f0;
+  --kiwi-border-strong: #c5cae9;
+  --kiwi-text: #1a1a2e;
+  --kiwi-text-2: #4a4a6a;
+  --kiwi-text-3: #9ca3af;
+
+  /* Typography */
+  --kiwi-font: 'Inter', system-ui, sans-serif;
+  --kiwi-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Radius */
+  --kiwi-radius: 10px;
+  --kiwi-radius-sm: 6px;
+
+  /* Legacy aliases for existing components */
+  --bg: var(--kiwi-bg);
+  --bg2: var(--kiwi-bg-card);
+  --bg3: var(--kiwi-bg-card);
+  --bg4: var(--kiwi-blue-light);
+  --border: var(--kiwi-border);
+  --border2: var(--kiwi-border-strong);
+  --accent: var(--kiwi-blue);
+  --accent-dim: var(--kiwi-blue-light);
+  --accent-glow: rgba(59, 91, 219, 0.25);
+  --success: var(--kiwi-green);
+  --success-dim: var(--kiwi-green-light);
+  --warning: var(--kiwi-amber);
+  --warning-dim: var(--kiwi-amber-light);
+  --danger: var(--kiwi-red);
+  --danger-dim: var(--kiwi-red-light);
+  --text: var(--kiwi-text);
+  --text2: var(--kiwi-text-2);
+  --text3: var(--kiwi-text-3);
+  --radius: var(--kiwi-radius-sm);
+  --radius-lg: var(--kiwi-radius);
+  --spacing: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--kiwi-bg);
+  color: var(--kiwi-text);
+  font-family: var(--kiwi-font);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: #1a1a2e;
+}
+
+.mono {
+  font-family: 'DM Mono', monospace;
+}
