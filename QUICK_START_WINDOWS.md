@@ -21,6 +21,12 @@ Current release status: Windows local-first V1.
 
 ## Start KIWI
 
+If this is your first time using a fresh GitHub ZIP or clone, run this once first:
+
+```powershell
+.\bootstrap_kiwi.bat
+```
+
 1. Open the parent KIWI folder.
 2. Double-click start_kiwi.bat.
 3. Open the URL shown in the script window (usually http://localhost:3000).

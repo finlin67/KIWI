@@ -67,9 +67,171 @@ KIWI/
 ## Requirements
 
 - Windows 10 or 11
-- Node.js LTS (includes npm)
-- Python 3.10+ on PATH
+- Node.js 20+ (npm 10+ recommended)
+- Python 3.11+ on PATH
 - Optional: Ollama (for local AI mode)
+
+## Get Started Install
+
+If you downloaded a fresh ZIP or cloned the repo from GitHub, KIWI will not start until you install the Python and Node.js dependencies once.
+
+### Fastest path: one-command bootstrap
+
+From the repository root, run:
+
+```powershell
+.\bootstrap_kiwi.bat
+```
+
+This script will:
+
+- create `.venv` if missing
+- upgrade `pip`
+- install `kiwi_desktop\requirements.txt`
+- install `kiwi_desktop\api\requirements.txt`
+- install `KIWI_Web` npm dependencies if `node_modules` is missing
+
+If you want it to bootstrap and immediately launch KIWI after setup:
+
+```powershell
+.\bootstrap_kiwi.bat --start
+```
+
+If you want to force a fresh web dependency install:
+
+```powershell
+.\bootstrap_kiwi.bat --force-web
+```
+
+### 1. Download or clone the repository
+
+- GitHub ZIP: download and extract the repository to a normal folder such as `C:\Tools\KIWI`
+- Git clone:
+
+```powershell
+git clone https://github.com/finlin67/Knowledge-Intake-Workbench-Intelligence_KIWI.git
+cd Knowledge-Intake-Workbench-Intelligence_KIWI
+```
+
+### 2. Manual setup path
+
+Use this only if you do not want to use `bootstrap_kiwi.bat`.
+
+### 3. Create the Python virtual environment
+
+From the repository root:
+
+```powershell
+py -3.11 -m venv .venv
+```
+
+Activate it:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation, run this once in the current terminal:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+```
+
+### 4. Install the Python dependencies
+
+Install both the desktop/runtime dependencies and the API dependencies:
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r kiwi_desktop\requirements.txt
+python -m pip install -r kiwi_desktop\api\requirements.txt
+```
+
+Optional developer/test tools:
+
+```powershell
+python -m pip install -r kiwi_desktop\requirements-dev.txt
+```
+
+### 5. Install the web UI dependencies
+
+In a new command prompt or in the same terminal:
+
+```powershell
+cd KIWI_Web
+npm install
+cd ..
+```
+
+### 6. Start KIWI
+
+After the installs complete:
+
+```powershell
+.\start_kiwi.bat --stable
+```
+
+Then open:
+
+- `http://localhost:3000`
+
+You should also see a backend health URL printed by the script, such as:
+
+- `http://127.0.0.1:8000/api/health`
+
+### 7. Stop KIWI
+
+When finished:
+
+```powershell
+.\stop_kiwi.bat
+```
+
+## Fresh GitHub Download Troubleshooting
+
+If `start_kiwi.bat` opens a browser window but KIWI does not work correctly, the most common cause is that one of these steps was skipped:
+
+- `bootstrap_kiwi.bat` was never run
+- Python virtual environment was not created
+- `kiwi_desktop\requirements.txt` was not installed
+- `kiwi_desktop\api\requirements.txt` was not installed
+- `KIWI_Web\npm install` was not run
+
+Quick checks:
+
+```powershell
+Test-Path .\.venv\Scripts\python.exe
+Test-Path KIWI_Web\node_modules
+```
+
+If either check returns `False`, the bootstrap install is incomplete.
+
+## Can This Be Packaged As One Portable Install?
+
+Yes, but the current repository is still a source checkout, not a fully portable release.
+
+The cleanest packaging options are:
+
+1. A Windows release ZIP that already includes:
+  - a prebuilt `.venv`
+  - installed `KIWI_Web\node_modules`
+  - the launch scripts
+2. A proper Windows installer using a packager such as Inno Setup or NSIS
+3. A bundled desktop release where the Python backend and web frontend are shipped together as one app
+
+For this repo today, the fastest path is still:
+
+1. Create `.venv`
+2. Install Python requirements
+3. Run `npm install` in `KIWI_Web`
+4. Launch with `start_kiwi.bat`
+
+If you want a true one-click portable build, the next engineering step would be to add a release script that:
+
+- creates the virtual environment automatically
+- installs Python requirements automatically
+- installs/builds the web app automatically
+- outputs a distributable Windows folder or installer
 
 ## Quick Start for Windows
 
