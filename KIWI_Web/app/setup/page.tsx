@@ -525,6 +525,7 @@ export default function SetupPage() {
   const batchFolderInputRef = useRef<HTMLInputElement | null>(null)
   const consecutiveHealthFailuresRef = useRef(0)
   const manualProjectEditRef = useRef(false)
+  const autoScanNextBatchRef = useRef(false)
 
   const normalizedImportBase = importBase.trim().replace(/[\\/]+$/, '')
   const normalizedExportBase = exportBase.trim().replace(/[\\/]+$/, '')
@@ -908,6 +909,7 @@ export default function SetupPage() {
     const nextBatchName =
       suggestNextBatchName(form.sourceFolderName || lastScannedBatchName || currentBatchName || '') || ''
 
+    autoScanNextBatchRef.current = Boolean(nextBatchName)
     setForm((prev) => ({
       ...prev,
       sourceFolderName: nextBatchName
@@ -1204,6 +1206,13 @@ export default function SetupPage() {
       setBatchState('ready_to_scan')
     }
   }, [importPath, projectState, batchState, hasScannedBatch])
+
+  useEffect(() => {
+    if (batchState !== 'ready_to_scan' || !autoScanNextBatchRef.current) return
+    autoScanNextBatchRef.current = false
+    void handleScanBatch()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [batchState])
 
   useEffect(() => {
     if (!draftHydratedRef.current) return

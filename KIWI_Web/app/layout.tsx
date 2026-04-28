@@ -8,6 +8,9 @@ import { ProjectProvider } from '@/lib/context'
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favico.ico" sizes="any" />
+      </head>
       <body>
         <ProjectProvider>
           <AppShell>{children}</AppShell>

@@ -500,9 +500,11 @@ class MainWindow(QMainWindow):
                 level="warning",
                 project_name="No project loaded",
                 raw_folder_tail="Raw: --",
+                current_batch_folder="Current batch folder: --",
                 export_profile=profile_name,
             )
             return
+        current_batch_folder = f"Current batch folder: {ctx.raw_folder.name or '--'}"
         try:
             header_raw = Path(self._header.raw_folder_edit.text().strip() or ".").expanduser().resolve()
             header_out = Path(self._header.output_folder_edit.text().strip() or ".").expanduser().resolve()
@@ -511,6 +513,7 @@ class MainWindow(QMainWindow):
                 level="error",
                 project_name=ctx.name,
                 raw_folder_tail="Raw path error",
+                current_batch_folder=current_batch_folder,
                 export_profile=profile_name,
             )
             return
@@ -520,6 +523,7 @@ class MainWindow(QMainWindow):
                 level="ok",
                 project_name=ctx.name,
                 raw_folder_tail=raw_tail,
+                current_batch_folder=current_batch_folder,
                 export_profile=profile_name,
             )
             return
@@ -527,6 +531,7 @@ class MainWindow(QMainWindow):
             level="warning",
             project_name=ctx.name,
             raw_folder_tail=f"Loaded {raw_tail}",
+            current_batch_folder=current_batch_folder,
             export_profile=profile_name,
         )
 

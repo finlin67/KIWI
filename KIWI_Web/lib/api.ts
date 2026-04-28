@@ -2,6 +2,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_KIWI_API_BASE ?? 'http://localhost:8000
 const API_BASE_STORAGE_KEY = 'kiwi_api_base'
 const API_REQUEST_TIMEOUT_MS = 30000
 const BATCH_PREP_REQUEST_TIMEOUT_MS = 5 * 60 * 1000
+const RUN_EXPORT_REQUEST_TIMEOUT_MS = 30 * 60 * 1000
 const API_BASE_CANDIDATES = [
   BASE_URL,
   'http://127.0.0.1:8000',
@@ -325,7 +326,7 @@ export async function runExport(export_profile: 'anythingllm' | 'open_webui' | '
   return request('/api/exports/run', {
     method: 'POST',
     body: JSON.stringify({ session_token, export_profile })
-  })
+  }, RUN_EXPORT_REQUEST_TIMEOUT_MS)
 }
 
 export async function fetchOllamaModels(): Promise<OllamaModelsResponse> {

@@ -7,6 +7,31 @@ import tkinter as tk
 from tkinter import messagebox
 
 
+def _resolve_launcher_icon(root_dir: Path) -> Path | None:
+    """Resolve launcher icon from known project locations."""
+    candidates = (
+        root_dir / "KIWI_Web" / "public" / "favico.ico",
+        root_dir / "images" / "kiwifav.ico",
+    )
+    for icon_path in candidates:
+        if icon_path.exists():
+            return icon_path
+    return None
+
+
+def _set_windows_app_user_model_id() -> None:
+    """Set explicit AppUserModelID so Windows taskbar uses KIWI launcher identity."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("KIWI.Launcher")
+    except Exception:
+        # Non-fatal: launcher still works if this call is unavailable.
+        pass
+
+
 def get_root_dir() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
@@ -28,10 +53,19 @@ def run_start_here(flag: str) -> None:
 
 
 def main() -> None:
+    _set_windows_app_user_model_id()
+    root_dir = get_root_dir()
     root = tk.Tk()
     root.title("KIWI Launcher")
     root.geometry("420x250")
     root.resizable(False, False)
+
+    icon_path = _resolve_launcher_icon(root_dir)
+    if icon_path is not None:
+        try:
+            root.iconbitmap(default=str(icon_path))
+        except tk.TclError:
+            pass
 
     container = tk.Frame(root, padx=18, pady=18)
     container.pack(fill="both", expand=True)

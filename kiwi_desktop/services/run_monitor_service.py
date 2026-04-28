@@ -821,6 +821,14 @@ class RunMonitorService:
             idx = lower.index("source_batches")
             if idx + 1 < len(parts):
                 return Path(*parts[: idx + 2]).resolve()
+
+        # Support batch roots outside a canonical source_batches tree.
+        # If a file is nested under batch_###/subdir/file.ext, use batch_###.
+        parent = path.parent.resolve()
+        for candidate in (parent, *parent.parents):
+            if re.fullmatch(r"batch_(\d+)", candidate.name.lower()):
+                return candidate
+
         return path.parent.resolve()
 
     @staticmethod

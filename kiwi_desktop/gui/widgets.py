@@ -70,6 +70,7 @@ class ProjectHeaderWidget(QWidget):
         "context_dot_label",
         "context_project_label",
         "context_path_label",
+        "context_batch_label",
         "context_profile_badge",
         "quick_start_btn",
         "create_btn",
@@ -727,6 +728,8 @@ class ProjectHeaderWidget(QWidget):
         ctx_sep.setStyleSheet("color: #35354a;")
         self.context_path_label = QLabel("Source: --")
         self.context_path_label.setStyleSheet("color: #5a5a7a; font-size: 11px;")
+        self.context_batch_label = QLabel("Current batch folder: --")
+        self.context_batch_label.setStyleSheet("color: #7a7aa0; font-size: 11px;")
         self.context_profile_badge = QLabel(self.export_profile_combo.currentText())
         self.context_profile_badge.setStyleSheet(
             "padding: 2px 10px; border-radius: 10px;"
@@ -751,7 +754,8 @@ class ProjectHeaderWidget(QWidget):
         context_row.addWidget(self.context_dot_label)
         context_row.addWidget(self.context_project_label)
         context_row.addWidget(ctx_sep)
-        context_row.addWidget(self.context_path_label, 1)
+        context_row.addWidget(self.context_path_label)
+        context_row.addWidget(self.context_batch_label, 1)
         context_row.addWidget(self.context_profile_badge)
         context_row.addSpacing(12)
         context_row.addWidget(moon_lbl)
@@ -800,6 +804,7 @@ class ProjectHeaderWidget(QWidget):
         level: str,
         project_name: str,
         raw_folder_tail: str,
+        current_batch_folder: str,
         export_profile: str,
     ) -> None:
         colors = {
@@ -811,6 +816,7 @@ class ProjectHeaderWidget(QWidget):
         self.context_dot_label.setStyleSheet(f"font-size: 10px; color: {dot_color};")
         self.context_project_label.setText(project_name or "No project loaded")
         self.context_path_label.setText(raw_folder_tail or "Raw: --")
+        self.context_batch_label.setText(current_batch_folder or "Current batch folder: --")
         self.context_profile_badge.setText(export_profile)
 
     @staticmethod

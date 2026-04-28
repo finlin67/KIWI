@@ -327,3 +327,35 @@ def test_pending_batch_overview_prefers_lowest_batch_number(tmp_path: Path) -> N
     assert overview.other_pending == 2
     assert overview.next_batch_folder is not None
     assert overview.next_batch_folder.resolve() == raw_two.resolve()
+
+
+def test_pending_batch_overview_handles_nested_non_source_batches(tmp_path: Path) -> None:
+    monitor, db_path = _configure_monitor(tmp_path)
+    raw_current = tmp_path / "incoming" / "batch_001"
+    raw_next = tmp_path / "incoming" / "batch_002"
+    raw_current.mkdir(parents=True, exist_ok=True)
+    raw_next.mkdir(parents=True, exist_ok=True)
+    monitor.configure(
+        db_path=db_path,
+        raw_folder=raw_current,
+        output_folder=tmp_path / "out",
+        export_profile="anythingllm",
+        log=lambda _m: None,
+    )
+
+    db = Database(db_path)
+    db.connect()
+    files = FileRepository(db)
+    current_file = raw_current / "doc_a.md"
+    next_nested = raw_next / "topic" / "doc_b.md"
+    next_nested.parent.mkdir(parents=True, exist_ok=True)
+    current_file.write_text("# current", encoding="utf-8")
+    next_nested.write_text("# next", encoding="utf-8")
+    files.insert(path=str(current_file.resolve()), display_name="doc_a.md")
+    files.insert(path=str(next_nested.resolve()), display_name="doc_b.md")
+
+    overview = monitor.pending_batch_overview()
+    assert overview.current_pending == 1
+    assert overview.other_pending == 1
+    assert overview.next_batch_folder is not None
+    assert overview.next_batch_folder.resolve() == raw_next.resolve()
