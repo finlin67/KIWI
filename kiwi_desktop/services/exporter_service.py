@@ -98,6 +98,7 @@ def _load_json(path: Path, fallback: object) -> object:
 def _read_files_manifest_rows(path: Path) -> list[dict[str, str]]:
     if not path.exists():
         return []
+    csv.field_size_limit(10 * 1024 * 1024)  # 10 MB — manifests can have large fields
     out: list[dict[str, str]] = []
     with path.open("r", encoding="utf-8", newline="") as f:
         for row in csv.DictReader(f):

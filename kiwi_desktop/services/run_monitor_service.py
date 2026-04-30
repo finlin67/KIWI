@@ -165,6 +165,17 @@ class RunMonitorService:
         del log
 
     def is_running(self) -> bool:
+        # Self-heal rare stale state where the worker thread has exited but the
+        # running event stayed set due an unexpected cleanup interruption.
+        if self._running.is_set() and self._thread is not None and not self._thread.is_alive():
+            self._logger.warning("detected stale running flag; worker thread is not alive")
+            self._running.clear()
+            self._pause.clear()
+            self._stop.clear()
+            if self._final_state in {"running", "starting"}:
+                self._final_state = "failed"
+            self._thread = None
+            self._enqueue_log("Run state recovered after unexpected worker termination.")
         return self._running.is_set()
 
     def drain_logs(self) -> tuple[str, ...]:
@@ -189,8 +200,9 @@ class RunMonitorService:
             )
             return self._last_snapshot
         status_col, next_stage_col = _profile_queue_columns(self._export_profile)
+        db = Database(self._db_path)
         try:
-            conn = Database(self._db_path).connect()
+            conn = db.connect()
             total_files = int(conn.execute("SELECT COUNT(*) FROM files").fetchone()[0] or 0)
             processed = int(
                 conn.execute(f"SELECT COUNT(*) FROM files WHERE {status_col} = ?", (RunnerStatus.COMPLETED.value,)).fetchone()[0]
@@ -248,6 +260,8 @@ class RunMonitorService:
                 state=state,
             )
             return self._last_snapshot
+        finally:
+            db.close()
 
     def start_with_options(self, *, scan_first: bool) -> None:
         if self._running.is_set():
@@ -322,21 +336,25 @@ class RunMonitorService:
         if self._db_path is None:
             raise RuntimeError("Run monitor is not configured. Create or load a project first.")
         status_col, next_stage_col = _profile_queue_columns(self._export_profile)
-        conn = Database(self._db_path).connect()
-        cur = conn.execute(
-            f"""
-            UPDATE files
-            SET {status_col} = ?,
-                {next_stage_col} = ?,
-                runner_status = ?,
-                pipeline_next_stage = ?,
-                last_error = NULL,
-                updated_at = datetime('now')
-            """,
-            (RunnerStatus.NEW.value, "classified", RunnerStatus.NEW.value, "classified"),
-        )
-        conn.commit()
-        updated = int(cur.rowcount or 0)
+        db = Database(self._db_path)
+        try:
+            conn = db.connect()
+            cur = conn.execute(
+                f"""
+                UPDATE files
+                SET {status_col} = ?,
+                    {next_stage_col} = ?,
+                    runner_status = ?,
+                    pipeline_next_stage = ?,
+                    last_error = NULL,
+                    updated_at = datetime('now')
+                """,
+                (RunnerStatus.NEW.value, "classified", RunnerStatus.NEW.value, "classified"),
+            )
+            conn.commit()
+            updated = int(cur.rowcount or 0)
+        finally:
+            db.close()
         self._enqueue_log(f"Requeued {updated} file(s) for processing.")
         self._logger.info("requeue all completed", extra={"updated": updated})
         return updated
@@ -348,29 +366,33 @@ class RunMonitorService:
         if self._db_path is None:
             raise RuntimeError("Run monitor is not configured. Create or load a project first.")
         status_col, next_stage_col = _profile_queue_columns(self._export_profile)
-        conn = Database(self._db_path).connect()
-        cur = conn.execute(
-            f"""
-            UPDATE files
-            SET {status_col} = ?,
-                {next_stage_col} = NULL,
-                runner_status = ?,
-                pipeline_next_stage = NULL,
-                last_error = NULL,
-                updated_at = datetime('now')
-            WHERE {status_col} IN (?, ?, ?)
-              AND {next_stage_col} IS NOT NULL
-            """,
-            (
-                RunnerStatus.COMPLETED.value,
-                RunnerStatus.COMPLETED.value,
-                RunnerStatus.NEW.value,
-                RunnerStatus.PROCESSING.value,
-                RunnerStatus.FAILED.value,
-            ),
-        )
-        conn.commit()
-        cleared = int(cur.rowcount or 0)
+        db = Database(self._db_path)
+        try:
+            conn = db.connect()
+            cur = conn.execute(
+                f"""
+                UPDATE files
+                SET {status_col} = ?,
+                    {next_stage_col} = NULL,
+                    runner_status = ?,
+                    pipeline_next_stage = NULL,
+                    last_error = NULL,
+                    updated_at = datetime('now')
+                WHERE {status_col} IN (?, ?, ?)
+                  AND {next_stage_col} IS NOT NULL
+                """,
+                (
+                    RunnerStatus.COMPLETED.value,
+                    RunnerStatus.COMPLETED.value,
+                    RunnerStatus.NEW.value,
+                    RunnerStatus.PROCESSING.value,
+                    RunnerStatus.FAILED.value,
+                ),
+            )
+            conn.commit()
+            cleared = int(cur.rowcount or 0)
+        finally:
+            db.close()
         self._enqueue_log(f"Cleared {cleared} pending file(s) from active queue.")
         self._logger.info("clear pending queue completed", extra={"cleared": cleared})
         return cleared
@@ -383,31 +405,35 @@ class RunMonitorService:
             raise RuntimeError("Run monitor is not configured. Create or load a project first.")
         status_col, next_stage_col = _profile_queue_columns(self._export_profile)
         raw_prefix = self._raw_path_prefix()
-        conn = Database(self._db_path).connect()
-        cur = conn.execute(
-            f"""
-            UPDATE files
-            SET {status_col} = ?,
-                {next_stage_col} = NULL,
-                runner_status = ?,
-                pipeline_next_stage = NULL,
-                last_error = NULL,
-                updated_at = datetime('now')
-            WHERE {status_col} IN (?, ?, ?)
-              AND {next_stage_col} IS NOT NULL
-              AND path NOT LIKE ?
-            """,
-            (
-                RunnerStatus.COMPLETED.value,
-                RunnerStatus.COMPLETED.value,
-                RunnerStatus.NEW.value,
-                RunnerStatus.PROCESSING.value,
-                RunnerStatus.FAILED.value,
-                f"{raw_prefix}%",
-            ),
-        )
-        conn.commit()
-        cleared = int(cur.rowcount or 0)
+        db = Database(self._db_path)
+        try:
+            conn = db.connect()
+            cur = conn.execute(
+                f"""
+                UPDATE files
+                SET {status_col} = ?,
+                    {next_stage_col} = NULL,
+                    runner_status = ?,
+                    pipeline_next_stage = NULL,
+                    last_error = NULL,
+                    updated_at = datetime('now')
+                WHERE {status_col} IN (?, ?, ?)
+                  AND {next_stage_col} IS NOT NULL
+                  AND path NOT LIKE ?
+                """,
+                (
+                    RunnerStatus.COMPLETED.value,
+                    RunnerStatus.COMPLETED.value,
+                    RunnerStatus.NEW.value,
+                    RunnerStatus.PROCESSING.value,
+                    RunnerStatus.FAILED.value,
+                    f"{raw_prefix}%",
+                ),
+            )
+            conn.commit()
+            cleared = int(cur.rowcount or 0)
+        finally:
+            db.close()
         self._enqueue_log(f"Cleared {cleared} pending file(s) outside the current raw folder.")
         self._logger.info("clear pending outside raw completed", extra={"cleared": cleared})
         return cleared
@@ -420,28 +446,32 @@ class RunMonitorService:
             raise RuntimeError("Run monitor is not configured. Create or load a project first.")
         status_col, next_stage_col = _profile_queue_columns(self._export_profile)
         raw_prefix = self._raw_path_prefix()
-        conn = Database(self._db_path).connect()
-        cur = conn.execute(
-            f"""
-            UPDATE files
-            SET {status_col} = ?,
-                {next_stage_col} = ?,
-                runner_status = ?,
-                pipeline_next_stage = ?,
-                last_error = NULL,
-                updated_at = datetime('now')
-            WHERE path LIKE ?
-            """,
-            (
-                RunnerStatus.NEW.value,
-                "classified",
-                RunnerStatus.NEW.value,
-                "classified",
-                f"{raw_prefix}%",
-            ),
-        )
-        conn.commit()
-        updated = int(cur.rowcount or 0)
+        db = Database(self._db_path)
+        try:
+            conn = db.connect()
+            cur = conn.execute(
+                f"""
+                UPDATE files
+                SET {status_col} = ?,
+                    {next_stage_col} = ?,
+                    runner_status = ?,
+                    pipeline_next_stage = ?,
+                    last_error = NULL,
+                    updated_at = datetime('now')
+                WHERE path LIKE ?
+                """,
+                (
+                    RunnerStatus.NEW.value,
+                    "classified",
+                    RunnerStatus.NEW.value,
+                    "classified",
+                    f"{raw_prefix}%",
+                ),
+            )
+            conn.commit()
+            updated = int(cur.rowcount or 0)
+        finally:
+            db.close()
         self._enqueue_log(f"Requeued {updated} file(s) in the current raw folder.")
         self._logger.info("requeue current raw completed", extra={"updated": updated})
         return updated
@@ -450,69 +480,73 @@ class RunMonitorService:
         if self._db_path is None or self._output_folder is None or self._raw_folder is None:
             raise RuntimeError("Run monitor is not configured. Create or load a project first.")
         status_col, next_stage_col = _profile_queue_columns(self._export_profile)
-        conn = Database(self._db_path).connect()
+        db = Database(self._db_path)
         raw_root = str(self._raw_folder.resolve())
         if raw_root.endswith(("\\", "/")):
             raw_prefix = raw_root
         else:
             raw_prefix = f"{raw_root}{os.sep}"
-        total_files = int(conn.execute("SELECT COUNT(*) FROM files").fetchone()[0] or 0)
-        pending_files = int(
-            conn.execute(
-                f"""
-                SELECT COUNT(*) FROM files
-                WHERE {status_col} IN (?, ?, ?)
-                  AND {next_stage_col} IS NOT NULL
-                """,
-                (RunnerStatus.NEW.value, RunnerStatus.PROCESSING.value, RunnerStatus.FAILED.value),
-            ).fetchone()[0]
-            or 0
-        )
-        processed_files = int(
-            conn.execute(f"SELECT COUNT(*) FROM files WHERE {status_col} = ?", (RunnerStatus.COMPLETED.value,)).fetchone()[0]
-            or 0
-        )
-        failed_files = int(
-            conn.execute(f"SELECT COUNT(*) FROM files WHERE {status_col} = ?", (RunnerStatus.FAILED.value,)).fetchone()[0]
-            or 0
-        )
-        pending_in_raw_folder = int(
-            conn.execute(
-                f"""
-                SELECT COUNT(*) FROM files
-                WHERE {status_col} IN (?, ?, ?)
-                  AND {next_stage_col} IS NOT NULL
-                  AND path LIKE ?
-                """,
-                (
-                    RunnerStatus.NEW.value,
-                    RunnerStatus.PROCESSING.value,
-                    RunnerStatus.FAILED.value,
-                    f"{raw_prefix}%",
-                ),
-            ).fetchone()[0]
-            or 0
-        )
-        pending_outside_raw_folder = max(0, pending_files - pending_in_raw_folder)
-        pending_review_required = int(
-            conn.execute(
-                f"""
-                SELECT COUNT(*) FROM files
-                WHERE {status_col} IN (?, ?, ?)
-                  AND {next_stage_col} IS NOT NULL
-                  AND review_required = 1
-                """,
-                (RunnerStatus.NEW.value, RunnerStatus.PROCESSING.value, RunnerStatus.FAILED.value),
-            ).fetchone()[0]
-            or 0
-        )
-        completed_review_required = int(
-            conn.execute(
-                f"SELECT COUNT(*) FROM files WHERE {status_col} = ? AND review_required = 1",
-                (RunnerStatus.COMPLETED.value,),
-            ).fetchone()[0]
-            or 0
-        )
+        try:
+            conn = db.connect()
+            total_files = int(conn.execute("SELECT COUNT(*) FROM files").fetchone()[0] or 0)
+            pending_files = int(
+                conn.execute(
+                    f"""
+                    SELECT COUNT(*) FROM files
+                    WHERE {status_col} IN (?, ?, ?)
+                      AND {next_stage_col} IS NOT NULL
+                    """,
+                    (RunnerStatus.NEW.value, RunnerStatus.PROCESSING.value, RunnerStatus.FAILED.value),
+                ).fetchone()[0]
+                or 0
+            )
+            processed_files = int(
+                conn.execute(f"SELECT COUNT(*) FROM files WHERE {status_col} = ?", (RunnerStatus.COMPLETED.value,)).fetchone()[0]
+                or 0
+            )
+            failed_files = int(
+                conn.execute(f"SELECT COUNT(*) FROM files WHERE {status_col} = ?", (RunnerStatus.FAILED.value,)).fetchone()[0]
+                or 0
+            )
+            pending_in_raw_folder = int(
+                conn.execute(
+                    f"""
+                    SELECT COUNT(*) FROM files
+                    WHERE {status_col} IN (?, ?, ?)
+                      AND {next_stage_col} IS NOT NULL
+                      AND path LIKE ?
+                    """,
+                    (
+                        RunnerStatus.NEW.value,
+                        RunnerStatus.PROCESSING.value,
+                        RunnerStatus.FAILED.value,
+                        f"{raw_prefix}%",
+                    ),
+                ).fetchone()[0]
+                or 0
+            )
+            pending_outside_raw_folder = max(0, pending_files - pending_in_raw_folder)
+            pending_review_required = int(
+                conn.execute(
+                    f"""
+                    SELECT COUNT(*) FROM files
+                    WHERE {status_col} IN (?, ?, ?)
+                      AND {next_stage_col} IS NOT NULL
+                      AND review_required = 1
+                    """,
+                    (RunnerStatus.NEW.value, RunnerStatus.PROCESSING.value, RunnerStatus.FAILED.value),
+                ).fetchone()[0]
+                or 0
+            )
+            completed_review_required = int(
+                conn.execute(
+                    f"SELECT COUNT(*) FROM files WHERE {status_col} = ? AND review_required = 1",
+                    (RunnerStatus.COMPLETED.value,),
+                ).fetchone()[0]
+                or 0
+            )
+        finally:
+            db.close()
         historical_rate = (completed_review_required / processed_files) if processed_files > 0 else 0.0
         estimated_review_count = max(pending_review_required, int(round(pending_files * historical_rate)))
 
@@ -523,21 +557,26 @@ class RunMonitorService:
             config=cfg,
             sample_limit=max(10, min(20, preview_limit)),
         )
-        preview_rows = conn.execute(
-            f"""
-            SELECT COALESCE(filename, path) AS file_name,
-                   workspace,
-                   stage_checkpoint,
-                   review_required,
-                   {next_stage_col} AS next_stage
-            FROM files
-            WHERE {status_col} IN (?, ?, ?)
-              AND {next_stage_col} IS NOT NULL
-            ORDER BY id ASC
-            LIMIT ?
-            """,
-            (RunnerStatus.NEW.value, RunnerStatus.PROCESSING.value, RunnerStatus.FAILED.value, max(1, preview_limit)),
-        ).fetchall()
+        db = Database(self._db_path)
+        try:
+            conn = db.connect()
+            preview_rows = conn.execute(
+                f"""
+                SELECT COALESCE(filename, path) AS file_name,
+                       workspace,
+                       stage_checkpoint,
+                       review_required,
+                       {next_stage_col} AS next_stage
+                FROM files
+                WHERE {status_col} IN (?, ?, ?)
+                  AND {next_stage_col} IS NOT NULL
+                ORDER BY id ASC
+                LIMIT ?
+                """,
+                (RunnerStatus.NEW.value, RunnerStatus.PROCESSING.value, RunnerStatus.FAILED.value, max(1, preview_limit)),
+            ).fetchall()
+        finally:
+            db.close()
         previews: list[PreflightFilePreview] = []
         for row in preview_rows:
             likely_workspace = str(row["workspace"] or "").strip()
@@ -612,35 +651,39 @@ class RunMonitorService:
             return PendingBatchOverview(current_pending=0, other_pending=0, next_batch_folder=None)
         status_col, next_stage_col = _profile_queue_columns(self._export_profile)
         raw_prefix = self._raw_path_prefix()
-        conn = Database(self._db_path).connect()
+        db = Database(self._db_path)
         pending_values = (
             RunnerStatus.NEW.value,
             RunnerStatus.PROCESSING.value,
             RunnerStatus.FAILED.value,
         )
-        current_pending = int(
-            conn.execute(
+        try:
+            conn = db.connect()
+            current_pending = int(
+                conn.execute(
+                    f"""
+                    SELECT COUNT(*)
+                    FROM files
+                    WHERE {status_col} IN (?, ?, ?)
+                      AND {next_stage_col} IS NOT NULL
+                      AND path LIKE ?
+                    """,
+                    (*pending_values, f"{raw_prefix}%"),
+                ).fetchone()[0]
+                or 0
+            )
+            outside_rows = conn.execute(
                 f"""
-                SELECT COUNT(*)
+                SELECT path
                 FROM files
                 WHERE {status_col} IN (?, ?, ?)
                   AND {next_stage_col} IS NOT NULL
-                  AND path LIKE ?
+                  AND path NOT LIKE ?
                 """,
                 (*pending_values, f"{raw_prefix}%"),
-            ).fetchone()[0]
-            or 0
-        )
-        outside_rows = conn.execute(
-            f"""
-            SELECT path
-            FROM files
-            WHERE {status_col} IN (?, ?, ?)
-              AND {next_stage_col} IS NOT NULL
-              AND path NOT LIKE ?
-            """,
-            (*pending_values, f"{raw_prefix}%"),
-        ).fetchall()
+            ).fetchall()
+        finally:
+            db.close()
         other_pending = len(outside_rows)
         batch_roots: set[Path] = set()
         for row in outside_rows:
@@ -792,14 +835,16 @@ class RunMonitorService:
                 files_finished_ok=files_finished_ok,
                 files_marked_failed=files_marked_failed,
             )
-            if db is not None:
-                db.close()
-            self._running.clear()
-            self._stop.clear()
-            self._pause.clear()
-            self._thread = None
-            self._logger.info("worker cleanup complete", extra={"final_state": self._final_state})
-            self._enqueue_log("Thread/worker cleanup complete.")
+            try:
+                if db is not None:
+                    db.close()
+            finally:
+                self._running.clear()
+                self._stop.clear()
+                self._pause.clear()
+                self._thread = None
+                self._logger.info("worker cleanup complete", extra={"final_state": self._final_state})
+                self._enqueue_log("Thread/worker cleanup complete.")
 
     def _enqueue_log(self, message: str) -> None:
         self._log_queue.put(message)

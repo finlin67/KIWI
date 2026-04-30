@@ -150,6 +150,30 @@ def test_run_monitor_stop_transitions_to_stopping_and_cleans_up(tmp_path: Path, 
     assert "Thread/worker cleanup complete." in joined
 
 
+def test_is_running_self_heals_stale_running_flag(tmp_path: Path) -> None:
+    monitor, _db_path = _configure_monitor(tmp_path)
+
+    def _noop() -> None:
+        return
+
+    t = rms.threading.Thread(target=_noop, name="test-stale-worker", daemon=True)
+    t.start()
+    t.join(timeout=1.0)
+    assert not t.is_alive()
+
+    monitor._thread = t
+    monitor._running.set()
+    monitor._final_state = "running"
+
+    assert monitor.is_running() is False
+    snap = monitor.snapshot()
+    assert snap.state == "failed"
+
+    logs = monitor.drain_logs()
+    joined = " | ".join(logs)
+    assert "Run state recovered after unexpected worker termination." in joined
+
+
 def test_requeue_all_resets_completed_files_to_new(tmp_path: Path) -> None:
     monitor, db_path = _configure_monitor(tmp_path)
     db = Database(db_path)

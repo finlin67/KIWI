@@ -120,42 +120,45 @@ class InventoryService:
         """Return (current_raw_pending, outside_raw_pending) for the active profile."""
         status_col, next_stage_col = _queue_columns_for_profile(export_profile)
         db = Database(db_path)
-        conn = db.connect()
-        raw_root = str(raw_folder.expanduser().resolve())
-        if raw_root.endswith(("\\", "/")):
-            raw_prefix = raw_root
-        else:
-            raw_prefix = f"{raw_root}\\"
-        pending_values = (
-            RunnerStatus.NEW.value,
-            RunnerStatus.PROCESSING.value,
-            RunnerStatus.FAILED.value,
-        )
-        base_sql = f"""
-            SELECT id,
-                   COALESCE(filename, path) AS file_name,
-                   path,
-                   {status_col} AS queue_status,
-                   {next_stage_col} AS next_stage,
-                   workspace,
-                   subfolder,
-                   updated_at
-            FROM files
-            WHERE {status_col} IN (?, ?, ?)
-              AND {next_stage_col} IS NOT NULL
-        """
-        in_rows = conn.execute(
-            base_sql + " AND path LIKE ? ORDER BY id ASC LIMIT ?",
-            (*pending_values, f"{raw_prefix}%", limit_each),
-        ).fetchall()
-        out_rows = conn.execute(
-            base_sql + " AND path NOT LIKE ? ORDER BY id ASC LIMIT ?",
-            (*pending_values, f"{raw_prefix}%", limit_each),
-        ).fetchall()
-        raw_root_path = raw_folder.expanduser().resolve()
-        return tuple(_queue_row_from_db_row(r, raw_root=raw_root_path) for r in in_rows), tuple(
-            _queue_row_from_db_row(r, raw_root=raw_root_path) for r in out_rows
-        )
+        try:
+            conn = db.connect()
+            raw_root = str(raw_folder.expanduser().resolve())
+            if raw_root.endswith(("\\", "/")):
+                raw_prefix = raw_root
+            else:
+                raw_prefix = f"{raw_root}\\"
+            pending_values = (
+                RunnerStatus.NEW.value,
+                RunnerStatus.PROCESSING.value,
+                RunnerStatus.FAILED.value,
+            )
+            base_sql = f"""
+                SELECT id,
+                       COALESCE(filename, path) AS file_name,
+                       path,
+                       {status_col} AS queue_status,
+                       {next_stage_col} AS next_stage,
+                       workspace,
+                       subfolder,
+                       updated_at
+                FROM files
+                WHERE {status_col} IN (?, ?, ?)
+                  AND {next_stage_col} IS NOT NULL
+            """
+            in_rows = conn.execute(
+                base_sql + " AND path LIKE ? ORDER BY id ASC LIMIT ?",
+                (*pending_values, f"{raw_prefix}%", limit_each),
+            ).fetchall()
+            out_rows = conn.execute(
+                base_sql + " AND path NOT LIKE ? ORDER BY id ASC LIMIT ?",
+                (*pending_values, f"{raw_prefix}%", limit_each),
+            ).fetchall()
+            raw_root_path = raw_folder.expanduser().resolve()
+            return tuple(_queue_row_from_db_row(r, raw_root=raw_root_path) for r in in_rows), tuple(
+                _queue_row_from_db_row(r, raw_root=raw_root_path) for r in out_rows
+            )
+        finally:
+            db.close()
 
     @staticmethod
     def _select_rows(

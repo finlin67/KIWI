@@ -213,7 +213,7 @@ class ProjectHeaderWidget(QWidget):
             "When enabled, KIWI will run AnythingLLM then Open WebUI for each batch, "
             "and automatically load the next pending batch when available."
         )
-        self.sticky_dual_profiles_check.setStyleSheet("color: #a8a8c8; font-size: 11px;")
+        self.sticky_dual_profiles_check.setStyleSheet("color: #d0d0e8; font-size: 12px;")
 
         self.pause_btn = QPushButton("Pause")
         self.pause_btn.setToolTip("Pause after the current file finishes. Use Resume to continue.")
@@ -255,98 +255,98 @@ class ProjectHeaderWidget(QWidget):
         self.quick_start_btn.setStyleSheet(
             "QPushButton {"
             "  background-color: #4a7fff; color: #ffffff; font-weight: bold;"
-            "  font-size: 13px; min-height: 38px; border-radius: 5px; border: none;"
-            "  padding: 0 12px;"
+            "  font-size: 14px; min-height: 42px; border-radius: 6px; border: none;"
+            "  padding: 0 14px;"
             "}"
             "QPushButton:hover { background-color: #6090ff; }"
             "QPushButton:pressed { background-color: #3a6fe8; }"
         )
         self.scan_btn.setStyleSheet(
             "QPushButton {"
-            "  background-color: #2d6a4f; color: #a8d8c0;"
-            "  font-size: 12px; font-weight: bold;"
-            "  min-height: 34px; border-radius: 5px; border: none;"
+            "  background-color: #2d6a4f; color: #d7f0e2;"
+            "  font-size: 13px; font-weight: bold;"
+            "  min-height: 38px; border-radius: 6px; border: none;"
             "}"
             "QPushButton:hover { background-color: #3a8a65; }"
         )
         self.run_btn.setStyleSheet(
             "QPushButton {"
-            "  background-color: #2d2d3d; color: #c0c0d8;"
-            "  font-size: 12px; font-weight: bold;"
+            "  background-color: #2d2d3d; color: #e4e4f3;"
+            "  font-size: 13px; font-weight: bold;"
             "  border: 1px solid #4a7fff;"
-            "  min-height: 34px; border-radius: 5px;"
+            "  min-height: 38px; border-radius: 6px;"
             "}"
             "QPushButton:hover { background-color: #35354a; }"
         )
         self.run_both_btn.setStyleSheet(
             "QPushButton {"
-            "  background-color: #2d2d3d; color: #c0c0d8;"
-            "  font-size: 12px; font-weight: bold;"
+            "  background-color: #2d2d3d; color: #e4e4f3;"
+            "  font-size: 13px; font-weight: bold;"
             "  border: 1px solid #35354a;"
-            "  min-height: 34px; border-radius: 5px;"
+            "  min-height: 38px; border-radius: 6px;"
             "}"
             "QPushButton:hover { background-color: #35354a; }"
         )
         for _btn in (self.create_btn, self.load_btn):
             _btn.setStyleSheet(
                 "QPushButton {"
-                "  background-color: #222230; color: #8888a8;"
-                "  border: 1px solid #35354a; min-height: 32px; border-radius: 5px;"
+                "  background-color: #222230; color: #d0d0e8;"
+                "  border: 1px solid #35354a; min-height: 36px; border-radius: 6px;"
                 "}"
                 "QPushButton:hover { color: #c0c0d8; }"
             )
         self.settings_shortcut_btn.setStyleSheet(
             "QPushButton {"
-            "  background-color: #222230; color: #4a7fff;"
-            "  font-size: 12px;"
-            "  border: 1px solid #35354a; min-height: 34px; border-radius: 5px;"
+            "  background-color: #222230; color: #8fb5ff;"
+            "  font-size: 13px;"
+            "  border: 1px solid #35354a; min-height: 38px; border-radius: 6px;"
             "}"
             "QPushButton:hover { background-color: #2a2a3d; }"
         )
         self.prep_tool_btn.setStyleSheet(
             "QPushButton {"
-            "  background-color: #222230; color: #8888a8;"
-            "  border: 1px solid #35354a; min-height: 34px; border-radius: 5px;"
+            "  background-color: #222230; color: #d0d0e8;"
+            "  border: 1px solid #35354a; min-height: 38px; border-radius: 6px;"
             "}"
             "QPushButton:hover { color: #c0c0d8; }"
         )
         self.pause_btn.setStyleSheet(
             "QPushButton {"
-            "  background-color: #3d3010; color: #c89a20;"
-            "  font-size: 12px; font-weight: bold;"
-            "  border: 1px solid #c89a20; min-height: 34px; border-radius: 5px;"
+            "  background-color: #3d3010; color: #f0cb63;"
+            "  font-size: 13px; font-weight: bold;"
+            "  border: 1px solid #f0cb63; min-height: 38px; border-radius: 6px;"
             "}"
             "QPushButton:hover { background-color: #4a3b14; }"
         )
         self.resume_btn.setStyleSheet(
             "QPushButton {"
-            "  background-color: #1a3328; color: #3a9e6e;"
-            "  font-size: 12px; font-weight: bold;"
-            "  border: 1px solid #3a9e6e; min-height: 34px; border-radius: 5px;"
+            "  background-color: #1a3328; color: #7fd4a7;"
+            "  font-size: 13px; font-weight: bold;"
+            "  border: 1px solid #7fd4a7; min-height: 38px; border-radius: 6px;"
             "}"
             "QPushButton:hover { background-color: #1f3f30; }"
         )
         self.stop_btn.setStyleSheet(
             "QPushButton {"
-            "  background-color: #2d1818; color: #b84040;"
-            "  font-size: 12px; font-weight: bold;"
-            "  border: 1px solid #b84040; min-height: 34px; border-radius: 5px;"
+            "  background-color: #2d1818; color: #f18a8a;"
+            "  font-size: 13px; font-weight: bold;"
+            "  border: 1px solid #f18a8a; min-height: 38px; border-radius: 6px;"
             "}"
             "QPushButton:hover { background-color: #3a1e1e; }"
         )
         self.help_btn = QPushButton("? Help")
-        self.help_btn.setFixedHeight(28)
+        self.help_btn.setMinimumHeight(34)
         self.help_btn.setMinimumWidth(72)
         self.help_btn.setToolTip("Open help — quick start guide, FAQ, and glossary")
         self.help_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.help_btn.setStyleSheet(
             "QPushButton {"
-            "  background: rgba(74, 127, 255, 0.15); color: #4a7fff;"
+            "  background: rgba(74, 127, 255, 0.18); color: #9cc2ff;"
             "  border: 1px solid #4a7fff; border-radius: 5px;"
-            "  font-size: 12px; font-weight: bold; padding: 0 12px;"
+            "  font-size: 13px; font-weight: bold; padding: 0 12px;"
             "}"
             "QPushButton:hover {"
-            "  background: rgba(74, 127, 255, 0.28); color: #7ab0ff;"
+            "  background: rgba(74, 127, 255, 0.30); color: #c3dbff;"
             "}"
             "QPushButton:pressed { background: rgba(74, 127, 255, 0.4); }"
         )
@@ -362,12 +362,12 @@ class ProjectHeaderWidget(QWidget):
         self.setup_quick_toggle_btn.setArrowType(Qt.RightArrow)
         self.setup_quick_toggle_btn.setStyleSheet(
             "QToolButton {"
-            "  color: #c0c0d8;"
+            "  color: #e2e2f0;"
             "  background-color: #1a1a28;"
             "  border: 1px solid #35354a;"
             "  border-radius: 4px;"
-            "  min-height: 30px;"
-            "  padding: 0 8px;"
+            "  min-height: 34px;"
+            "  padding: 0 10px;"
             "  text-align: left;"
             "}"
             "QToolButton:hover { background-color: #222236; }"
@@ -387,11 +387,11 @@ class ProjectHeaderWidget(QWidget):
             "Confirm your AI model and routing setup without leaving Setup."
         )
         quick_hint.setWordWrap(True)
-        quick_hint.setStyleSheet("color: #8888a8; font-size: 11px;")
+        quick_hint.setStyleSheet("color: #d0d0e8; font-size: 12px;")
         quick_layout.addWidget(quick_hint)
 
         quick_ai_title = QLabel("Quick edit: AI setup")
-        quick_ai_title.setStyleSheet("color: #4a7fff; font-size: 11px; font-weight: bold;")
+        quick_ai_title.setStyleSheet("color: #8fb5ff; font-size: 12px; font-weight: bold;")
         quick_layout.addWidget(quick_ai_title)
 
         ai_edit_row = QHBoxLayout()
@@ -421,7 +421,7 @@ class ProjectHeaderWidget(QWidget):
         quick_layout.addLayout(ai_edit_row)
 
         quick_categories_title = QLabel("Quick edit: Workspaces + Keywords")
-        quick_categories_title.setStyleSheet("color: #4a7fff; font-size: 11px; font-weight: bold;")
+        quick_categories_title.setStyleSheet("color: #8fb5ff; font-size: 12px; font-weight: bold;")
         quick_layout.addWidget(quick_categories_title)
 
         ws_edit_row = QHBoxLayout()
@@ -477,7 +477,7 @@ class ProjectHeaderWidget(QWidget):
         ai_row.setSpacing(8)
         self.setup_ai_summary_label = QLabel("AI: no project loaded")
         self.setup_ai_summary_label.setWordWrap(True)
-        self.setup_ai_summary_label.setStyleSheet("color: #c0c0d8; font-size: 11px;")
+        self.setup_ai_summary_label.setStyleSheet("color: #e2e2f0; font-size: 12px;")
         self.setup_open_ai_btn = QPushButton("Open AI Settings")
         self.setup_open_ai_btn.setToolTip("Jump to Settings and focus AI model setup.")
         self.setup_open_ai_btn.setStyleSheet(
@@ -496,7 +496,7 @@ class ProjectHeaderWidget(QWidget):
         cat_row.setSpacing(8)
         self.setup_categories_summary_label = QLabel("Routing: no project loaded")
         self.setup_categories_summary_label.setWordWrap(True)
-        self.setup_categories_summary_label.setStyleSheet("color: #c0c0d8; font-size: 11px;")
+        self.setup_categories_summary_label.setStyleSheet("color: #e2e2f0; font-size: 12px;")
         self.setup_open_categories_btn = QPushButton("Open Keyword/Workspace Settings")
         self.setup_open_categories_btn.setToolTip(
             "Jump to Settings and focus Workspaces, Companies, Projects, and Rules."
@@ -569,10 +569,10 @@ class ProjectHeaderWidget(QWidget):
             self.project_name_edit, self.raw_folder_edit,
             self.output_folder_edit, self.export_profile_combo,
         ):
-            _field.setMinimumHeight(32)
+            _field.setMinimumHeight(36)
             _field.setStyleSheet(
                 "background-color: #1a1a28; border: 1px solid #35354a;"
-                " border-radius: 4px; color: #c0c0d8; padding: 0 8px;"
+                " border-radius: 4px; color: #f0f0fa; padding: 0 10px; font-size: 13px;"
             )
 
         # Wire callbacks
@@ -589,13 +589,12 @@ class ProjectHeaderWidget(QWidget):
 
         # ── Build layout ──────────────────────────────────────────────────
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(12, 8, 12, 8)
-        main_layout.setSpacing(8)
-        self.setMinimumHeight(260)
+        main_layout.setContentsMargins(14, 10, 14, 10)
+        main_layout.setSpacing(10)
+        self.setMinimumHeight(430)
 
-        # Top row: Step 1 (wide) + Step 2 (narrow)
-        top_row = QHBoxLayout()
-        top_row.setSpacing(10)
+        workflow_layout = QVBoxLayout()
+        workflow_layout.setSpacing(10)
 
         step1_card, s1 = self._build_step_panel(
             "step1_card", "step1_header", "📁",
@@ -621,8 +620,8 @@ class ProjectHeaderWidget(QWidget):
             "and your AI classification model."
         )
         step2_desc.setWordWrap(True)
-        step2_desc.setStyleSheet("color: #8888a8; font-size: 11px;")
-        step2_desc.setMinimumHeight(48)
+        step2_desc.setStyleSheet("color: #d0d0e8; font-size: 12px;")
+        step2_desc.setMinimumHeight(60)
         s2.addWidget(step2_desc)
         s2.addStretch(1)
         s2.addWidget(self.settings_shortcut_btn)
@@ -636,13 +635,8 @@ class ProjectHeaderWidget(QWidget):
         help_row.addStretch()
         s2.addLayout(help_row)
 
-        top_row.addWidget(step1_card, 3)
-        top_row.addWidget(step2_card, 2)
-        main_layout.addLayout(top_row)
-
-        # Bottom row: Step 3 (wide) + Step 4 (narrow)
-        bot_row = QHBoxLayout()
-        bot_row.setSpacing(10)
+        workflow_layout.addWidget(step1_card)
+        workflow_layout.addWidget(step2_card)
 
         step3_card, s3 = self._build_step_panel(
             "step3_card", "step3_header", "▶",
@@ -651,7 +645,7 @@ class ProjectHeaderWidget(QWidget):
         profile_row = QHBoxLayout()
         profile_row.setSpacing(8)
         profile_lbl = QLabel("Export Profile:")
-        profile_lbl.setStyleSheet("color: #8888a8; font-size: 11px;")
+        profile_lbl.setStyleSheet("color: #d0d0e8; font-size: 12px;")
         profile_row.addWidget(profile_lbl)
         profile_row.addWidget(self.export_profile_combo)
         profile_row.addStretch(1)
@@ -693,14 +687,14 @@ class ProjectHeaderWidget(QWidget):
             "Use Triage for items needing review."
         )
         step4_hint.setWordWrap(True)
-        step4_hint.setStyleSheet("color: #8888a8; font-size: 11px;")
+        step4_hint.setStyleSheet("color: #d0d0e8; font-size: 12px;")
         s4.addWidget(step4_hint)
         s4.addStretch(1)
         s4.addWidget(self.factory_reset_btn)
 
-        bot_row.addWidget(step3_card, 3)
-        bot_row.addWidget(step4_card, 2)
-        main_layout.addLayout(bot_row)
+        workflow_layout.addWidget(step3_card)
+        workflow_layout.addWidget(step4_card)
+        main_layout.addLayout(workflow_layout)
 
         # ── Context / status bar ──────────────────────────────────────────
         status_sep = QFrame()
@@ -713,28 +707,28 @@ class ProjectHeaderWidget(QWidget):
         self.context_frame.setFrameShape(QFrame.StyledPanel)
         self.context_frame.setStyleSheet("QFrame { background-color: #1a1a22; border: none; }")
         context_row = QHBoxLayout(self.context_frame)
-        context_row.setContentsMargins(12, 4, 12, 4)
+        context_row.setContentsMargins(12, 8, 12, 8)
         context_row.setSpacing(8)
 
         self.context_dot_label = QLabel("●")
-        self.context_dot_label.setStyleSheet("font-size: 10px; color: #c89a20;")
+        self.context_dot_label.setStyleSheet("font-size: 11px; color: #f0cb63;")
         self.context_project_label = QLabel("No project loaded")
         self.context_project_label.setStyleSheet(
-            "font-weight: bold; color: #c0c0d8; font-size: 12px;"
+            "font-weight: bold; color: #f0f0fa; font-size: 13px;"
         )
         ctx_sep = QFrame()
         ctx_sep.setFrameShape(QFrame.VLine)
         ctx_sep.setFrameShadow(QFrame.Sunken)
         ctx_sep.setStyleSheet("color: #35354a;")
         self.context_path_label = QLabel("Source: --")
-        self.context_path_label.setStyleSheet("color: #5a5a7a; font-size: 11px;")
+        self.context_path_label.setStyleSheet("color: #b7b7d2; font-size: 12px;")
         self.context_batch_label = QLabel("Current batch folder: --")
-        self.context_batch_label.setStyleSheet("color: #7a7aa0; font-size: 11px;")
+        self.context_batch_label.setStyleSheet("color: #d0d0e8; font-size: 12px;")
         self.context_profile_badge = QLabel(self.export_profile_combo.currentText())
         self.context_profile_badge.setStyleSheet(
-            "padding: 2px 10px; border-radius: 10px;"
-            " background-color: #1e2d4a; color: #4a7fff;"
-            " border: 1px solid #2d3d5a; font-size: 11px;"
+            "padding: 4px 12px; border-radius: 12px;"
+            " background-color: #1e2d4a; color: #9cc2ff;"
+            " border: 1px solid #2d3d5a; font-size: 12px; font-weight: bold;"
         )
 
         # Light/dark theme toggle (🌙 = dark / ☀️ = light)
@@ -742,14 +736,14 @@ class ProjectHeaderWidget(QWidget):
         theme_toggle.setObjectName("theme_toggle")
         theme_toggle.setToolTip("Toggle light/dark mode")
         moon_lbl = QLabel("🌙")
-        moon_lbl.setStyleSheet("font-size: 13px; color: #686888; background: transparent;")
+        moon_lbl.setStyleSheet("font-size: 14px; color: #b7b7d2; background: transparent;")
         sun_lbl = QLabel("☀️")
-        sun_lbl.setStyleSheet("font-size: 13px; color: #686888; background: transparent;")
+        sun_lbl.setStyleSheet("font-size: 14px; color: #b7b7d2; background: transparent;")
 
         mode_simple_lbl = QLabel("Simple")
-        mode_simple_lbl.setStyleSheet("color: #686888; font-size: 11px;")
+        mode_simple_lbl.setStyleSheet("color: #d0d0e8; font-size: 12px;")
         mode_expert_lbl = QLabel("Expert")
-        mode_expert_lbl.setStyleSheet("color: #686888; font-size: 11px;")
+        mode_expert_lbl.setStyleSheet("color: #d0d0e8; font-size: 12px;")
 
         context_row.addWidget(self.context_dot_label)
         context_row.addWidget(self.context_project_label)
@@ -813,7 +807,7 @@ class ProjectHeaderWidget(QWidget):
             "error": "#b84040",
         }
         dot_color = colors.get(level, "#c89a20")
-        self.context_dot_label.setStyleSheet(f"font-size: 10px; color: {dot_color};")
+        self.context_dot_label.setStyleSheet(f"font-size: 11px; color: {dot_color};")
         self.context_project_label.setText(project_name or "No project loaded")
         self.context_path_label.setText(raw_folder_tail or "Raw: --")
         self.context_batch_label.setText(current_batch_folder or "Current batch folder: --")
@@ -833,7 +827,7 @@ class ProjectHeaderWidget(QWidget):
         card.setStyleSheet(
             f"QGroupBox#{card_name} {{"
             f"  border: 1px solid #35354a;"
-            f"  border-radius: 6px;"
+            f"  border-radius: 8px;"
             f"  background-color: #1e1e2a;"
             f"  padding: 0px;"
             f"  margin: 0px;"
@@ -845,11 +839,11 @@ class ProjectHeaderWidget(QWidget):
 
         header = QFrame()
         header.setObjectName(header_name)
-        header.setFixedHeight(34)
+        header.setFixedHeight(40)
         header.setStyleSheet(
             f"QFrame#{header_name} {{"
             f"  background-color: #2a2a38;"
-            f"  border-radius: 5px 5px 0px 0px;"
+            f"  border-radius: 8px 8px 0px 0px;"
             f"  border-bottom: 1px solid #35354a;"
             f"}}"
         )
@@ -857,11 +851,11 @@ class ProjectHeaderWidget(QWidget):
         header_row.setContentsMargins(10, 0, 10, 0)
         icon_lbl = QLabel(icon)
         icon_lbl.setStyleSheet(
-            "color: #4a7fff; font-size: 14px; background: transparent; border: none;"
+            "color: #8fb5ff; font-size: 16px; background: transparent; border: none;"
         )
         title_lbl = QLabel(title)
         title_lbl.setStyleSheet(
-            "color: #c8c8e0; font-size: 11px; font-weight: bold;"
+            "color: #f0f0fa; font-size: 13px; font-weight: bold;"
             " letter-spacing: 0.08em; background: transparent; border: none;"
         )
         header_row.addWidget(icon_lbl)
@@ -879,8 +873,8 @@ class ProjectHeaderWidget(QWidget):
             f"}}"
         )
         content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(14, 14, 14, 14)
-        content_layout.setSpacing(8)
+        content_layout.setContentsMargins(16, 16, 16, 16)
+        content_layout.setSpacing(10)
         card_layout.addWidget(content, 1)
 
         return card, content_layout
@@ -911,9 +905,9 @@ class ProjectHeaderWidget(QWidget):
     @staticmethod
     def _labeled_field(label_text: str, field_widget: QWidget) -> QVBoxLayout:
         block = QVBoxLayout()
-        block.setSpacing(2)
+        block.setSpacing(4)
         label = QLabel(label_text)
-        label.setStyleSheet("font-size: 10px; color: #686888; margin-bottom: 2px;")
+        label.setStyleSheet("font-size: 12px; color: #d0d0e8; margin-bottom: 2px;")
         block.addWidget(label)
         block.addWidget(field_widget)
         return block

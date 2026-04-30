@@ -922,6 +922,9 @@ class RunController:
     def sync_buttons(self) -> None:
         for line in self._monitor.drain_logs():
             self.append_log(line)
+            if "Run state recovered after unexpected worker termination." in line:
+                self._set_status_note("Previous run ended unexpectedly; ready to scan the next batch.")
+                self._info("Recovered run state. You can now click Scan Folder for the next batch.")
         snap = self._monitor.snapshot()
         self._run_tab.set_snapshot(
             state=snap.state,
@@ -1192,6 +1195,7 @@ class ExportsController:
 def _read_csv_rows(path: Path) -> list[dict[str, str]]:
     if not path.is_file():
         return []
+    csv.field_size_limit(10 * 1024 * 1024)  # 10 MB — manifests can have large fields
     out: list[dict[str, str]] = []
     with path.open("r", encoding="utf-8", newline="") as f:
         for row in csv.DictReader(f):

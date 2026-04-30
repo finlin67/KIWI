@@ -49,7 +49,13 @@ class ProjectService:
         project_file = meta_dir / PROJECT_META_NAME
         if db_path.exists():
             # "Create project" should start fresh, not silently reuse old queue state.
-            db_path.unlink()
+            try:
+                db_path.unlink()
+            except PermissionError as exc:
+                raise RuntimeError(
+                    "Could not reset existing project database because it is in use: "
+                    f"{db_path}. Close any KIWI windows or tools using this folder and try again."
+                ) from exc
         reset_database_initialization(db_path)
         payload = {
             "name": name.strip() or "Knowledge Intake Project",

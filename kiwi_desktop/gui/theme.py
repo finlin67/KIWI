@@ -20,8 +20,8 @@ class KIWTheme:
         "border":         "#35354a",
         "border_subtle":  "#28283a",
         "text_primary":   "#e8e8f0",
-        "text_secondary": "#8888a8",
-        "text_muted":     "#55556a",
+        "text_secondary": "#b7b7d2",
+        "text_muted":     "#8f8fa8",
         "accent":         "#4a7fff",
         "accent_hover":   "#6090ff",
         "success":        "#3a9e6e",
@@ -79,9 +79,9 @@ class KIWTheme:
     ACCENT_DANGER = "#cc4444"
     ACCENT_MUTED = "#5a5a5a"
     FONT_FAMILY = "Segoe UI"
-    FONT_SIZE_SM = 11
-    FONT_SIZE_MD = 12
-    FONT_SIZE_LG = 13
+    FONT_SIZE_SM = 12
+    FONT_SIZE_MD = 13
+    FONT_SIZE_LG = 15
 
     @classmethod
     def colors(cls) -> dict:
@@ -114,7 +114,7 @@ class KIWTheme:
             f"}}"
             f"QGroupBox {{"
             f"  font-weight: bold;"
-            f"  font-size: 12px;"
+            f"  font-size: 13px;"
             f"  border: 1px solid {c['border']};"
             f"  border-radius: 8px;"
             f"  margin-top: 0px;"
@@ -132,7 +132,8 @@ class KIWTheme:
             f"  color: {c['text_primary']};"
             f"  border: 1px solid {c['border']};"
             f"  border-radius: 4px;"
-            f"  padding: 4px 8px;"
+            f"  padding: 6px 10px;"
+            f"  min-height: 34px;"
             f"  selection-background-color: {c['accent']};"
             f"  selection-color: #ffffff;"
             f"}}"
@@ -144,8 +145,9 @@ class KIWTheme:
             f"  color: {c['btn_neutral_fg']};"
             f"  border: 1px solid {c['border']};"
             f"  border-radius: 5px;"
-            f"  padding: 5px 10px;"
-            f"  font-size: 12px;"
+            f"  padding: 6px 12px;"
+            f"  min-height: 34px;"
+            f"  font-size: 13px;"
             f"}}"
             f"QPushButton:hover {{"
             f"  border-color: {c['accent']};"
@@ -178,9 +180,9 @@ class KIWTheme:
             f"}}"
             f"QTabBar::tab {{"
             f"  background: transparent;"
-            f"  color: {c['text_muted']};"
-            f"  padding: 9px 18px;"
-            f"  font-size: 11px;"
+            f"  color: {c['text_secondary']};"
+            f"  padding: 10px 18px;"
+            f"  font-size: 12px;"
             f"  font-weight: bold;"
             f"  letter-spacing: 0.06em;"
             f"  border: none;"
@@ -204,6 +206,10 @@ class KIWTheme:
             f"  border: 1px solid {c['border']};"
             f"  selection-background-color: {c['accent']};"
             f"  selection-color: #ffffff;"
+            f"  font-size: 12px;"
+            f"}}"
+            f"QTableWidget::item, QTableView::item {{"
+            f"  padding: 6px;"
             f"}}"
             f"QHeaderView::section {{"
             f"  background-color: {c['bg_card']};"
@@ -211,9 +217,9 @@ class KIWTheme:
             f"  border: none;"
             f"  border-bottom: 1px solid {c['border']};"
             f"  border-right: 1px solid {c['border_subtle']};"
-            f"  padding: 6px 8px;"
+            f"  padding: 8px 10px;"
             f"  font-weight: bold;"
-            f"  font-size: 10px;"
+            f"  font-size: 11px;"
             f"}}"
             f"QScrollBar:vertical, QScrollBar:horizontal {{"
             f"  background: transparent;"

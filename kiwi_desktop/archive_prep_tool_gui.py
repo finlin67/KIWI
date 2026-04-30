@@ -10,6 +10,7 @@ from tkinter import ttk, filedialog, messagebox
 
 TEXT_EXTENSIONS = {".md", ".txt", ".markdown", ".json", ".yaml", ".yml", ".csv"}
 DEFAULT_MIN_TEXT_CHARS = 20
+STATE_DB_FILENAMES = {"state.sqlite3", "state.sqlite3-wal", "state.sqlite3-shm", "project.sqlite3"}
 
 
 class PrepToolApp:
@@ -241,13 +242,19 @@ class PrepToolApp:
         }
 
     def iter_files(self, root: Path, recursive: bool):
+        def _is_excluded(candidate: Path) -> bool:
+            parts = {p.lower() for p in candidate.parts}
+            if ".kiw" in parts:
+                return True
+            return candidate.name.lower() in STATE_DB_FILENAMES
+
         if recursive:
             for p in root.rglob("*"):
-                if p.is_file():
+                if p.is_file() and not _is_excluded(p):
                     yield p
         else:
             for p in root.iterdir():
-                if p.is_file():
+                if p.is_file() and not _is_excluded(p):
                     yield p
 
     def is_near_empty_text(self, path: Path, min_chars: int) -> bool:

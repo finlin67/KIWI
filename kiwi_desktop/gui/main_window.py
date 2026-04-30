@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QMainWindow,
     QMessageBox,
+    QSizePolicy,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -82,8 +83,9 @@ class MainWindow(QMainWindow):
         app = QApplication.instance()
         if app is not None:
             KIWTheme.apply_base_stylesheet(app)
-        self.setWindowTitle("Knowledge Intake Workbench")
-        self.resize(1100, 700)
+        self.setWindowTitle("Knowledge Intake Workbench Desktop")
+        self.resize(1360, 900)
+        self.setMinimumSize(1220, 820)
         project_service = ProjectService()
         self._project_service = project_service
         inventory_service = InventoryService()
@@ -160,6 +162,9 @@ class MainWindow(QMainWindow):
 
         root = QWidget()
         root_layout = QVBoxLayout(root)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(6)
+        self._header.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         root_layout.addWidget(self._header)
         self._tabs = QTabWidget()
         self._tabs.addTab(self._inventory_tab, "📋 Inventory")
@@ -169,6 +174,7 @@ class MainWindow(QMainWindow):
         self._tabs.addTab(self._run_tab, "📈 Run Monitor")
         self._tabs.addTab(self._exports_tab, "📤 Exports")
         self._tabs.addTab(self._settings_tab, "⚙ Settings")
+        self._tabs.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         root_layout.addWidget(self._tabs)
         self.setCentralWidget(root)
 

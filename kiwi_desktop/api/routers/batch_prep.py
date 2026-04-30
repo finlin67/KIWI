@@ -10,6 +10,7 @@ from pydantic import BaseModel
 router = APIRouter(tags=["batch_prep"])
 
 TEXT_EXTENSIONS = {".md", ".txt", ".markdown", ".json", ".yaml", ".yml", ".csv"}
+STATE_DB_FILENAMES = {"state.sqlite3", "state.sqlite3-wal", "state.sqlite3-shm", "project.sqlite3"}
 
 
 class BatchPrepRequest(BaseModel):
@@ -55,6 +56,13 @@ def safe_dest(dest: Path) -> Path:
         counter += 1
 
 
+def is_excluded_path(path: Path) -> bool:
+    parts = {p.lower() for p in path.parts}
+    if ".kiw" in parts:
+        return True
+    return path.name.lower() in STATE_DB_FILENAMES
+
+
 @router.post("/batch-prep/preview")
 def preview_batch(request: BatchPrepRequest) -> dict:
     source = Path(request.source_folder)
@@ -62,7 +70,7 @@ def preview_batch(request: BatchPrepRequest) -> dict:
         return {"error": f"Source folder not found: {request.source_folder}"}
 
     all_files = sorted(source.rglob("*"))
-    all_files = [f for f in all_files if f.is_file()]
+    all_files = [f for f in all_files if f.is_file() and not is_excluded_path(f)]
 
     empty = []
     usable = []
@@ -124,7 +132,7 @@ def run_batch(request: BatchPrepRequest) -> BatchPrepResult:
     batches_root.mkdir(parents=True, exist_ok=True)
 
     all_files = sorted(source.rglob("*"))
-    all_files = [f for f in all_files if f.is_file()]
+    all_files = [f for f in all_files if f.is_file() and not is_excluded_path(f)]
 
     empty_files = []
     usable_files = []

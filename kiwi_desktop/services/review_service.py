@@ -98,76 +98,85 @@ class ReviewService:
 
     def list_failed_files(self, *, db_path: Path, limit: int = 500) -> tuple[FailedFileRow, ...]:
         db = Database(db_path)
-        files = FileRepository(db).list_recent(limit=limit)
-        out: list[FailedFileRow] = []
-        for f in files:
-            if f.runner_status != RunnerStatus.FAILED.value:
-                continue
-            out.append(
-                FailedFileRow(
-                    file_id=f.id,
-                    file_name=f.filename or Path(f.path).name,
-                    status=f.runner_status,
-                    error=f.last_error or "",
+        try:
+            files = FileRepository(db).list_recent(limit=limit)
+            out: list[FailedFileRow] = []
+            for f in files:
+                if f.runner_status != RunnerStatus.FAILED.value:
+                    continue
+                out.append(
+                    FailedFileRow(
+                        file_id=f.id,
+                        file_name=f.filename or Path(f.path).name,
+                        status=f.runner_status,
+                        error=f.last_error or "",
+                    )
                 )
-            )
-        return tuple(out)
+            return tuple(out)
+        finally:
+            db.close()
 
     def list_exact_sha_duplicates(self, *, db_path: Path) -> tuple[DuplicateGroup, ...]:
         db = Database(db_path)
-        conn = db.connect()
-        groups = conn.execute(
-            """
-            SELECT sha256
-            FROM files
-            WHERE sha256 IS NOT NULL AND TRIM(sha256) != ''
-            GROUP BY sha256
-            HAVING COUNT(*) > 1
-            ORDER BY COUNT(*) DESC, sha256 ASC
-            """
-        ).fetchall()
-        out: list[DuplicateGroup] = []
-        for g in groups:
-            sha = str(g["sha256"])
-            rows = conn.execute(
+        try:
+            conn = db.connect()
+            groups = conn.execute(
                 """
-                SELECT id, COALESCE(filename, path) AS file_name
+                SELECT sha256
                 FROM files
-                WHERE sha256 = ?
-                ORDER BY id ASC
-                """,
-                (sha,),
+                WHERE sha256 IS NOT NULL AND TRIM(sha256) != ''
+                GROUP BY sha256
+                HAVING COUNT(*) > 1
+                ORDER BY COUNT(*) DESC, sha256 ASC
+                """
             ).fetchall()
-            out.append(
-                DuplicateGroup(
-                    sha256=sha,
-                    file_ids=tuple(int(r["id"]) for r in rows),
-                    file_names=tuple(str(r["file_name"]) for r in rows),
+            out: list[DuplicateGroup] = []
+            for g in groups:
+                sha = str(g["sha256"])
+                rows = conn.execute(
+                    """
+                    SELECT id, COALESCE(filename, path) AS file_name
+                    FROM files
+                    WHERE sha256 = ?
+                    ORDER BY id ASC
+                    """,
+                    (sha,),
+                ).fetchall()
+                out.append(
+                    DuplicateGroup(
+                        sha256=sha,
+                        file_ids=tuple(int(r["id"]) for r in rows),
+                        file_names=tuple(str(r["file_name"]) for r in rows),
+                    )
                 )
-            )
-        return tuple(out)
+            return tuple(out)
+        finally:
+            db.close()
 
     def list_review_required_files(self, *, db_path: Path, limit: int = 500) -> tuple[ReviewRequiredRow, ...]:
         db = Database(db_path)
-        files = FileRepository(db).list_recent(limit=limit)
-        out: list[ReviewRequiredRow] = []
-        for f in files:
-            payload = _checkpoint_payload(f.stage_checkpoint)
-            needs_review = f.review_required or bool(payload.get("review_required", False))
-            if not needs_review:
-                continue
-            confidence_num = _confidence_from_file_record(f, payload)
-            out.append(
-                ReviewRequiredRow(
-                    file_id=f.id,
-                    file_name=f.filename or Path(f.path).name,
-                    category=str(payload.get("category") or "unknown"),
-                    confidence=confidence_num,
-                    matched_by=str(f.matched_by or payload.get("matched_by") or ""),
-                    reason=str(f.classification_reason or payload.get("classification_reason") or ""),
+        try:
+            files = FileRepository(db).list_recent(limit=limit)
+            out: list[ReviewRequiredRow] = []
+            for f in files:
+                payload = _checkpoint_payload(f.stage_checkpoint)
+                needs_review = f.review_required or bool(payload.get("review_required", False))
+                if not needs_review:
+                    continue
+                confidence_num = _confidence_from_file_record(f, payload)
+                out.append(
+                    ReviewRequiredRow(
+                        file_id=f.id,
+                        file_name=f.filename or Path(f.path).name,
+                        category=str(payload.get("category") or "unknown"),
+                        confidence=confidence_num,
+                        matched_by=str(f.matched_by or payload.get("matched_by") or ""),
+                        reason=str(f.classification_reason or payload.get("classification_reason") or ""),
+                    )
                 )
-            )
-        return tuple(out)
+            return tuple(out)
+        finally:
+            db.close()
 
     def get_audit_queue(
         self,
@@ -177,164 +186,182 @@ class ReviewService:
         low_confidence_threshold: float = 0.65,
     ) -> AuditQueueData:
         db = Database(db_path)
-        files = FileRepository(db).list_recent(limit=limit)
-        review_required_rows: list[AuditQueueRow] = []
-        fallback_rows: list[AuditQueueRow] = []
-        failed_rows: list[AuditQueueRow] = []
-        low_conf_rows: list[AuditQueueRow] = []
-        unresolved_count = 0
-        matched_counts: dict[str, int] = {}
-        workspace_counts: dict[str, int] = {}
-        token_counts: dict[str, int] = {}
+        try:
+            files = FileRepository(db).list_recent(limit=limit)
+            review_required_rows: list[AuditQueueRow] = []
+            fallback_rows: list[AuditQueueRow] = []
+            failed_rows: list[AuditQueueRow] = []
+            low_conf_rows: list[AuditQueueRow] = []
+            unresolved_count = 0
+            matched_counts: dict[str, int] = {}
+            workspace_counts: dict[str, int] = {}
+            token_counts: dict[str, int] = {}
 
-        for f in files:
-            payload = _checkpoint_payload(f.stage_checkpoint)
-            confidence_num = _confidence_from_file_record(f, payload)
-            matched_by = str(f.matched_by or payload.get("matched_by") or "").strip()
-            reason = str(f.classification_reason or payload.get("classification_reason") or "").strip()
-            review_required = bool(f.review_required or payload.get("review_required", False))
-            row = AuditQueueRow(
-                file_id=f.id,
-                file_name=f.filename or Path(f.path).name,
-                status=f.runner_status,
-                workspace=(f.workspace or "").strip() or "unassigned",
-                subfolder=str(f.subfolder or payload.get("subfolder") or "").strip(),
-                confidence=confidence_num,
-                matched_by=matched_by,
-                review_required=review_required,
-                reason=reason,
+            for f in files:
+                payload = _checkpoint_payload(f.stage_checkpoint)
+                confidence_num = _confidence_from_file_record(f, payload)
+                matched_by = str(f.matched_by or payload.get("matched_by") or "").strip()
+                reason = str(f.classification_reason or payload.get("classification_reason") or "").strip()
+                review_required = bool(f.review_required or payload.get("review_required", False))
+                row = AuditQueueRow(
+                    file_id=f.id,
+                    file_name=f.filename or Path(f.path).name,
+                    status=f.runner_status,
+                    workspace=(f.workspace or "").strip() or "unassigned",
+                    subfolder=str(f.subfolder or payload.get("subfolder") or "").strip(),
+                    confidence=confidence_num,
+                    matched_by=matched_by,
+                    review_required=review_required,
+                    reason=reason,
+                )
+                is_failed = f.runner_status == RunnerStatus.FAILED.value
+                is_fallback = matched_by == "fallback"
+                is_low_conf = confidence_num < low_confidence_threshold
+                if review_required:
+                    review_required_rows.append(row)
+                if is_fallback:
+                    fallback_rows.append(row)
+                if is_failed:
+                    failed_rows.append(row)
+                if is_low_conf:
+                    low_conf_rows.append(row)
+
+                if review_required or is_fallback or is_failed or is_low_conf:
+                    unresolved_count += 1
+                    matched_key = matched_by or "(unknown)"
+                    matched_counts[matched_key] = matched_counts.get(matched_key, 0) + 1
+                    workspace_counts[row.workspace] = workspace_counts.get(row.workspace, 0) + 1
+
+                if is_fallback:
+                    for token in _filename_tokens(row.file_name):
+                        token_counts[token] = token_counts.get(token, 0) + 1
+
+            return AuditQueueData(
+                review_required=tuple(review_required_rows),
+                fallback=tuple(fallback_rows),
+                failed=tuple(failed_rows),
+                low_confidence=tuple(low_conf_rows),
+                summary=AuditQueueSummary(
+                    by_matched_by=_sorted_counts(matched_counts),
+                    by_workspace=_sorted_counts(workspace_counts),
+                    unresolved_count=unresolved_count,
+                    common_tokens=_sorted_counts(token_counts, limit=25),
+                ),
             )
-            is_failed = f.runner_status == RunnerStatus.FAILED.value
-            is_fallback = matched_by == "fallback"
-            is_low_conf = confidence_num < low_confidence_threshold
-            if review_required:
-                review_required_rows.append(row)
-            if is_fallback:
-                fallback_rows.append(row)
-            if is_failed:
-                failed_rows.append(row)
-            if is_low_conf:
-                low_conf_rows.append(row)
-
-            if review_required or is_fallback or is_failed or is_low_conf:
-                unresolved_count += 1
-                matched_key = matched_by or "(unknown)"
-                matched_counts[matched_key] = matched_counts.get(matched_key, 0) + 1
-                workspace_counts[row.workspace] = workspace_counts.get(row.workspace, 0) + 1
-
-            if is_fallback:
-                for token in _filename_tokens(row.file_name):
-                    token_counts[token] = token_counts.get(token, 0) + 1
-
-        return AuditQueueData(
-            review_required=tuple(review_required_rows),
-            fallback=tuple(fallback_rows),
-            failed=tuple(failed_rows),
-            low_confidence=tuple(low_conf_rows),
-            summary=AuditQueueSummary(
-                by_matched_by=_sorted_counts(matched_counts),
-                by_workspace=_sorted_counts(workspace_counts),
-                unresolved_count=unresolved_count,
-                common_tokens=_sorted_counts(token_counts, limit=25),
-            ),
-        )
+        finally:
+            db.close()
 
     def retry_failed_files(self, *, db_path: Path, file_ids: tuple[int, ...]) -> int:
         if not file_ids:
             return 0
         db = Database(db_path)
-        conn = db.connect()
-        q = ",".join("?" for _ in file_ids)
-        cur = conn.execute(
-            f"""
-            UPDATE files
-            SET runner_status = ?, last_error = NULL, updated_at = datetime('now')
-            WHERE id IN ({q}) AND runner_status = ?
-            """,
-            (RunnerStatus.NEW.value, *file_ids, RunnerStatus.FAILED.value),
-        )
-        conn.commit()
-        return int(cur.rowcount or 0)
+        try:
+            conn = db.connect()
+            q = ",".join("?" for _ in file_ids)
+            cur = conn.execute(
+                f"""
+                UPDATE files
+                SET runner_status = ?, last_error = NULL, updated_at = datetime('now')
+                WHERE id IN ({q}) AND runner_status = ?
+                """,
+                (RunnerStatus.NEW.value, *file_ids, RunnerStatus.FAILED.value),
+            )
+            conn.commit()
+            return int(cur.rowcount or 0)
+        finally:
+            db.close()
 
     def mark_reviewed(self, *, db_path: Path, file_ids: tuple[int, ...]) -> int:
         if not file_ids:
             return 0
         db = Database(db_path)
-        repo = FileRepository(db)
-        updated = 0
-        for file_id in file_ids:
-            rec = repo.get_by_id(file_id)
-            if rec is None:
-                continue
-            payload = _checkpoint_payload(rec.stage_checkpoint)
-            payload["review_required"] = False
-            repo.update_stage_checkpoint(file_id, json.dumps(payload, ensure_ascii=False))
-            repo.set_review_required(file_id, False)
-            updated += 1
-        return updated
+        try:
+            repo = FileRepository(db)
+            updated = 0
+            for file_id in file_ids:
+                rec = repo.get_by_id(file_id)
+                if rec is None:
+                    continue
+                payload = _checkpoint_payload(rec.stage_checkpoint)
+                payload["review_required"] = False
+                repo.update_stage_checkpoint(file_id, json.dumps(payload, ensure_ascii=False))
+                repo.set_review_required(file_id, False)
+                updated += 1
+            return updated
+        finally:
+            db.close()
 
     def override_category(self, *, db_path: Path, file_id: int, category: str) -> None:
         c = category.strip()
         if not c:
             raise ValueError("Category cannot be empty.")
         db = Database(db_path)
-        repo = FileRepository(db)
-        rec = repo.get_by_id(file_id)
-        if rec is None:
-            raise ValueError(f"File id not found: {file_id}")
-        payload: dict[str, object] = {}
-        if rec.stage_checkpoint:
-            try:
-                raw = json.loads(rec.stage_checkpoint)
-                if isinstance(raw, dict):
-                    payload = dict(raw)
-            except json.JSONDecodeError:
-                payload = {}
-        payload["category"] = c
-        repo.update_stage_checkpoint(file_id, json.dumps(payload, ensure_ascii=False))
+        try:
+            repo = FileRepository(db)
+            rec = repo.get_by_id(file_id)
+            if rec is None:
+                raise ValueError(f"File id not found: {file_id}")
+            payload: dict[str, object] = {}
+            if rec.stage_checkpoint:
+                try:
+                    raw = json.loads(rec.stage_checkpoint)
+                    if isinstance(raw, dict):
+                        payload = dict(raw)
+                except json.JSONDecodeError:
+                    payload = {}
+            payload["category"] = c
+            repo.update_stage_checkpoint(file_id, json.dumps(payload, ensure_ascii=False))
+        finally:
+            db.close()
 
     def override_workspace(self, *, db_path: Path, file_id: int, workspace: str) -> None:
         ws = workspace.strip()
         if ws not in WORKSPACE_OPTIONS:
             raise ValueError(f"Invalid workspace: {workspace!r}")
         db = Database(db_path)
-        repo = FileRepository(db)
-        rec = repo.get_by_id(file_id)
-        if rec is None:
-            raise ValueError(f"File id not found: {file_id}")
-        payload: dict[str, object] = {}
-        if rec.stage_checkpoint:
-            try:
-                raw = json.loads(rec.stage_checkpoint)
-                if isinstance(raw, dict):
-                    payload = dict(raw)
-            except json.JSONDecodeError:
-                payload = {}
-        payload["workspace"] = ws
-        repo.update_stage_checkpoint(file_id, json.dumps(payload, ensure_ascii=False))
-        repo.set_workspace(file_id, ws)
+        try:
+            repo = FileRepository(db)
+            rec = repo.get_by_id(file_id)
+            if rec is None:
+                raise ValueError(f"File id not found: {file_id}")
+            payload: dict[str, object] = {}
+            if rec.stage_checkpoint:
+                try:
+                    raw = json.loads(rec.stage_checkpoint)
+                    if isinstance(raw, dict):
+                        payload = dict(raw)
+                except json.JSONDecodeError:
+                    payload = {}
+            payload["workspace"] = ws
+            repo.update_stage_checkpoint(file_id, json.dumps(payload, ensure_ascii=False))
+            repo.set_workspace(file_id, ws)
+        finally:
+            db.close()
 
     def override_subfolder(self, *, db_path: Path, file_id: int, subfolder: str) -> None:
         normalized = subfolder.strip()
         db = Database(db_path)
-        repo = FileRepository(db)
-        rec = repo.get_by_id(file_id)
-        if rec is None:
-            raise ValueError(f"File id not found: {file_id}")
-        payload: dict[str, object] = {}
-        if rec.stage_checkpoint:
-            try:
-                raw = json.loads(rec.stage_checkpoint)
-                if isinstance(raw, dict):
-                    payload = dict(raw)
-            except json.JSONDecodeError:
-                payload = {}
-        if normalized:
-            payload["subfolder"] = normalized
-        else:
-            payload.pop("subfolder", None)
-        repo.update_classification_fields(file_id, {"subfolder": normalized or None})
-        repo.update_stage_checkpoint(file_id, json.dumps(payload, ensure_ascii=False))
+        try:
+            repo = FileRepository(db)
+            rec = repo.get_by_id(file_id)
+            if rec is None:
+                raise ValueError(f"File id not found: {file_id}")
+            payload: dict[str, object] = {}
+            if rec.stage_checkpoint:
+                try:
+                    raw = json.loads(rec.stage_checkpoint)
+                    if isinstance(raw, dict):
+                        payload = dict(raw)
+                except json.JSONDecodeError:
+                    payload = {}
+            if normalized:
+                payload["subfolder"] = normalized
+            else:
+                payload.pop("subfolder", None)
+            repo.update_classification_fields(file_id, {"subfolder": normalized or None})
+            repo.update_stage_checkpoint(file_id, json.dumps(payload, ensure_ascii=False))
+        finally:
+            db.close()
 
     def apply_category_workspace(
         self,
@@ -360,26 +387,29 @@ class ReviewService:
         if not file_ids:
             return 0
         db = Database(db_path)
-        repo = FileRepository(db)
-        updated = 0
-        for file_id in file_ids:
-            rec = repo.get_by_id(file_id)
-            if rec is None:
-                continue
-            category = "default"
-            if rec.stage_checkpoint:
-                try:
-                    payload = json.loads(rec.stage_checkpoint)
-                    if isinstance(payload, dict):
-                        c = payload.get("category")
-                        if isinstance(c, str) and c.strip():
-                            category = c.strip()
-                except json.JSONDecodeError:
-                    pass
-            ws = _WORKSPACE_BY_CATEGORY.get(category, "unassigned")
-            self.override_workspace(db_path=db_path, file_id=file_id, workspace=ws)
-            updated += 1
-        return updated
+        try:
+            repo = FileRepository(db)
+            updated = 0
+            for file_id in file_ids:
+                rec = repo.get_by_id(file_id)
+                if rec is None:
+                    continue
+                category = "default"
+                if rec.stage_checkpoint:
+                    try:
+                        payload = json.loads(rec.stage_checkpoint)
+                        if isinstance(payload, dict):
+                            c = payload.get("category")
+                            if isinstance(c, str) and c.strip():
+                                category = c.strip()
+                    except json.JSONDecodeError:
+                        pass
+                ws = _WORKSPACE_BY_CATEGORY.get(category, "unassigned")
+                self.override_workspace(db_path=db_path, file_id=file_id, workspace=ws)
+                updated += 1
+            return updated
+        finally:
+            db.close()
 
 
 def _confidence_from_file_record(rec: object, payload: dict[str, object]) -> float:

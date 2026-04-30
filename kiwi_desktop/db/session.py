@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 import threading
+from contextlib import contextmanager
 from importlib import resources
 from pathlib import Path
 from typing import Generator
@@ -90,6 +91,7 @@ class Database:
             self._conn.close()
             self._conn = None
 
+    @contextmanager
     def connection(self) -> Generator[sqlite3.Connection, None, None]:
         """Context-style lifecycle: connect, yield, close."""
         try:
