@@ -12,12 +12,17 @@ import { RefreshTipBanner } from '@/components/ui/RefreshTipBanner'
 import {
   clearQueue,
   createProject,
+  fetchCategorySuggestions,
+  fetchOllamaModels,
   getApiBaseUrl,
   getQueue,
+  getSettings,
   getToken,
   loadProject,
   runExport,
-  scanProject
+  saveSettings,
+  scanProject,
+  testOllamaConnection
 } from '@/lib/api'
 import { useProjectContext } from '@/lib/context'
 
@@ -61,6 +66,13 @@ type RunSettingsReview = {
   exportProfile: 'anythingllm' | 'open_webui' | 'both'
   workspaceMappings: string[]
   keywordMappings: string[]
+}
+
+type RulesConfig = Record<string, any>
+type CategorySuggestions = {
+  workspace_suggestions: { key: string; label: string; evidence_count: number }[]
+  company_suggestions: { token: string; workspace_key: string; evidence_count: number }[]
+  project_suggestions: { token: string; workspace_key: string; evidence_count: number }[]
 }
 
 const RUN_SETTINGS_FALLBACK: RunSettingsReview = {
@@ -185,6 +197,20 @@ function buildRunSettingsReview(defaultExportProfile: 'anythingllm' | 'open_webu
     workspaceMappings: Array.from(new Set(workspaceMappings)),
     keywordMappings: Array.from(new Set(keywordMappings))
   }
+}
+
+function syncAiLocalStorage(config: RulesConfig) {
+  localStorage.setItem('kiwi_ai_provider', String(config?.ai_provider ?? 'ollama'))
+  localStorage.setItem('kiwi_provider', String(config?.ai_provider ?? 'ollama'))
+  localStorage.setItem('kiwi_ai_model', String(config?.ollama_model ?? 'llama3.2:3b'))
+  localStorage.setItem('kiwi_ollama_model', String(config?.ollama_model ?? 'llama3.2:3b'))
+  localStorage.setItem('kiwi_model', String(config?.ollama_model ?? 'llama3.2:3b'))
+  localStorage.setItem('kiwi_ai_mode', String(config?.ai_mode ?? 'rules_only'))
+  localStorage.setItem('kiwi_mode', String(config?.ai_mode ?? 'rules_only'))
+  localStorage.setItem('kiwi_confidence_threshold', String(config?.confidence_threshold ?? 0.65))
+  localStorage.setItem('kiwi_threshold', String(config?.confidence_threshold ?? 0.65))
+  localStorage.setItem('kiwi_auto_assign_workspace', String(config?.auto_assign_workspace ?? true))
+  localStorage.setItem('kiwi_auto_assign', String(config?.auto_assign_workspace ?? true))
 }
 
 function ProjectSummaryBar({
@@ -519,6 +545,16 @@ export default function SetupPage() {
   const [queueMatchedByFilter, setQueueMatchedByFilter] = useState('all')
   const [queueNeedsReviewOnly, setQueueNeedsReviewOnly] = useState(false)
   const [runSettingsReview, setRunSettingsReview] = useState<RunSettingsReview>(RUN_SETTINGS_FALLBACK)
+  const [aiProvider, setAiProvider] = useState('ollama')
+  const [aiModel, setAiModel] = useState('llama3.2:3b')
+  const [aiMode, setAiMode] = useState('rules_only')
+  const [aiRules, setAiRules] = useState<RulesConfig | null>(null)
+  const [availableModels, setAvailableModels] = useState<string[]>(['llama3.2:3b'])
+  const [aiStatus, setAiStatus] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
+  const [savingAiSettings, setSavingAiSettings] = useState(false)
+  const [suggestionStatus, setSuggestionStatus] = useState('')
+  const [suggestionBusy, setSuggestionBusy] = useState(false)
   const draftHydratedRef = useRef(false)
   const skipFirstDraftPersistRef = useRef(true)
   const quickAiHydratedRef = useRef(false)
@@ -754,6 +790,134 @@ export default function SetupPage() {
       )
     } finally {
       setClearing(false)
+    }
+  }
+
+  const refreshInlineSettings = useCallback(async () => {
+    try {
+      const settings = await getSettings()
+      const config = (settings as { config?: RulesConfig })?.config ?? {}
+      setAiRules(config)
+      setAiProvider(String(config.ai_provider ?? 'ollama'))
+      setAiModel(String(config.ollama_model ?? 'llama3.2:3b'))
+      setAiMode(String(config.ai_mode ?? 'rules_only'))
+      syncAiLocalStorage(config)
+      setRunSettingsReview(buildRunSettingsReview(form.exportProfile))
+    } catch (err: unknown) {
+      setAiStatus(err instanceof Error ? err.message : 'Failed to load AI settings.')
+    }
+  }, [form.exportProfile])
+
+  const handleRefreshModels = async () => {
+    setAiBusy(true)
+    setAiStatus('')
+    try {
+      const data = await fetchOllamaModels()
+      if (data.models.length) {
+        setAvailableModels(data.models)
+        if (!data.models.includes(aiModel)) setAiModel(data.models[0])
+      }
+      setAiStatus(data.message)
+    } catch (err: unknown) {
+      setAiStatus(err instanceof Error ? err.message : 'Failed to refresh models.')
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
+  const handleTestConnection = async () => {
+    setAiBusy(true)
+    setAiStatus('')
+    try {
+      const data = await testOllamaConnection(aiModel)
+      setAiStatus(data.message)
+    } catch (err: unknown) {
+      setAiStatus(err instanceof Error ? err.message : 'Failed to test connection.')
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
+  const handleSaveInlineAiSettings = async () => {
+    setSavingAiSettings(true)
+    setAiStatus('')
+    try {
+      const baseRules = aiRules ?? {}
+      const nextRules: RulesConfig = {
+        ...baseRules,
+        ai_provider: aiProvider,
+        ollama_model: aiModel,
+        ai_mode: aiMode
+      }
+      await saveSettings(nextRules)
+      setAiRules(nextRules)
+      syncAiLocalStorage(nextRules)
+      localStorage.setItem('kiwi_profile', form.exportProfile)
+      localStorage.setItem('kiwi_export_profile', form.exportProfile)
+      setAiStatus('AI settings saved')
+      setRunSettingsReview(buildRunSettingsReview(form.exportProfile))
+    } catch (err: unknown) {
+      setAiStatus(err instanceof Error ? err.message : 'Failed to save AI settings.')
+    } finally {
+      setSavingAiSettings(false)
+    }
+  }
+
+  const handleSuggestCategories = async () => {
+    setSuggestionBusy(true)
+    setSuggestionStatus('')
+    try {
+      const suggestions = (await fetchCategorySuggestions()) as CategorySuggestions & { message?: string }
+      const nextRules: RulesConfig = { ...(aiRules ?? {}) }
+      nextRules.WORKSPACES = { ...(nextRules.WORKSPACES ?? {}) }
+      nextRules.COMPANY_MAP = { ...(nextRules.COMPANY_MAP ?? {}) }
+      nextRules.PROJECT_MAP = { ...(nextRules.PROJECT_MAP ?? {}) }
+
+      let applied = 0
+      for (const item of suggestions.workspace_suggestions ?? []) {
+        if (!nextRules.WORKSPACES[item.key]) {
+          nextRules.WORKSPACES[item.key] = item.label
+          applied += 1
+        }
+      }
+      for (const item of suggestions.company_suggestions ?? []) {
+        if (!nextRules.COMPANY_MAP[item.token]) {
+          nextRules.COMPANY_MAP[item.token] = item.workspace_key || 'operations'
+          applied += 1
+        }
+      }
+      for (const item of suggestions.project_suggestions ?? []) {
+        if (!nextRules.PROJECT_MAP[item.token]) {
+          nextRules.PROJECT_MAP[item.token] = item.workspace_key || 'operations'
+          applied += 1
+        }
+      }
+      setAiRules(nextRules)
+      setSuggestionStatus(
+        applied > 0 ? `Applied ${applied} suggestions. Click Apply Suggestions to save.` : 'No new suggestions found.'
+      )
+    } catch (err: unknown) {
+      setSuggestionStatus(err instanceof Error ? err.message : 'Failed to generate suggestions.')
+    } finally {
+      setSuggestionBusy(false)
+    }
+  }
+
+  const handleApplySuggestions = async () => {
+    if (!aiRules) {
+      setSuggestionStatus('No suggestions to apply yet.')
+      return
+    }
+    setSuggestionBusy(true)
+    try {
+      await saveSettings(aiRules)
+      syncAiLocalStorage(aiRules)
+      setSuggestionStatus('Suggestions applied')
+      setRunSettingsReview(buildRunSettingsReview(form.exportProfile))
+    } catch (err: unknown) {
+      setSuggestionStatus(err instanceof Error ? err.message : 'Failed to apply suggestions.')
+    } finally {
+      setSuggestionBusy(false)
     }
   }
 
@@ -1082,7 +1246,7 @@ export default function SetupPage() {
   const renderTable = (rows: Record<string, unknown>[], opts?: { scrollBody?: boolean; emptyMessage?: string }) => {
     const tableInner = (
       <table className="w-full text-sm">
-        <thead className="bg-[var(--kiwi-blue-pale)] text-left text-[0.65rem] font-bold uppercase tracking-[0.06em] text-[var(--kiwi-text-3)]">
+        <thead className="sticky top-0 z-10 bg-[var(--kiwi-blue-pale)] text-left text-[0.65rem] font-bold uppercase tracking-[0.06em] text-[var(--kiwi-text-3)]">
           <tr className="h-8">
             {tableColumns.map((column) => (
               <th key={column} className="px-3">
@@ -1234,6 +1398,16 @@ export default function SetupPage() {
   }, [form.exportProfile, activeProfile, quickAiProvider])
 
   useEffect(() => {
+    void refreshInlineSettings()
+  }, [refreshInlineSettings])
+
+  useEffect(() => {
+    if (aiProvider !== 'ollama') return
+    void handleRefreshModels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiProvider])
+
+  useEffect(() => {
     localStorage.setItem(
       'kiwi_draft',
       JSON.stringify({
@@ -1360,96 +1534,91 @@ export default function SetupPage() {
               : 3
 
   return (
-    <div className="min-h-[calc(100vh-48px)] bg-[#f3f4f6] px-0 py-0">
-      <div className="flex min-h-[calc(100vh-48px)]">
-      <aside className="hidden lg:flex w-64 min-w-[256px] border-r border-[#dde1f0] bg-white px-4 py-5 flex-col gap-4 sticky top-[48px] h-[calc(100vh-48px)] overflow-y-auto">
-        <Link
-          href="/batch-prep"
-          className="group flex items-start gap-2.5 rounded-lg border border-[#c7ddff] bg-[#eef4ff] px-3 py-2.5 text-xs text-[#1f3f8f] transition-colors hover:bg-[#e6f0ff]"
-        >
-          <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[#2f58d6] shadow-sm">
-            <FolderOpen className="h-3.5 w-3.5" />
-          </span>
-          <div className="leading-relaxed">
-            <strong className="block text-[13px] text-[#17337f]">Need to organize lots of files first?</strong>
-            <span className="text-[12px] text-[#2a4c9e]">
-              Open Batch Prep to group folders before running setup.
-            </span>
-          </div>
-        </Link>
-
-        <p className="text-[0.6rem] font-bold uppercase tracking-widest text-[#9ca3af] px-1 mt-2">Workflow Guide</p>
-
-        <div>
-          <SidebarStep
-            number={1}
-            title="Project Setup"
-            text="Enter Project Name, paste your full Export path, and choose Export Profile. Click Save Project. Do this once — settings persist across batches."
-            active={sidebarStep === 1}
-            complete={projectSaved}
-          />
-          <SidebarStep
-            number={2}
-            title="Scan a Batch"
-            text="Paste your Import base path, enter the next batch folder name (e.g. batch_001), then click Scan This Batch."
-            active={sidebarStep === 2}
-            complete={hasScannedBatch}
-          />
-          <SidebarStep
-            number={3}
-            title="Check Settings (optional)"
-            text="Review AI Provider, Workspaces, and Keywords in Settings before your first run."
-            link="/settings"
-            linkLabel="Open Settings →"
-            active={sidebarStep === 3}
-            complete={hasScannedBatch}
-          />
-          <SidebarStep
-            number={4}
-            title="Run the Batch"
-            text="Click Run Queue in the right panel. Check Triage first for any unassigned files that need manual review."
-            link="/triage"
-            linkLabel="Open Triage →"
-            active={sidebarStep === 4}
-            complete={runCompleted}
-          />
-          <SidebarStep
-            number={5}
-            title="Next Batch"
-            text="Click Start Next Batch when done. Only the batch folder clears. Enter batch_002 and repeat from Step 2."
-            active={sidebarStep === 5}
-            complete={nextBatchPrepared}
-          />
-        </div>
-
-        <a href="/help" className="mt-auto flex items-center gap-1.5 text-xs text-[#3b5bdb] hover:underline px-1 pt-4 border-t border-[#dde1f0]">
-          📖 Full documentation in Help
-        </a>
-      </aside>
-
-      <div className="flex-1 grid grid-cols-12 gap-3 p-3 md:p-4">
-      <ProjectSummaryBar
-        projectName={projectName}
-        projectState={projectState}
-        exportProfile={form.exportProfile}
-        exportFolder={resolvedOutputPath}
-        backendHealthy={backendHealthy}
-        currentBatchName={currentBatchName || lastScannedBatchName}
-      />
-      <div className="col-span-12">
+    <div className="min-h-[calc(100vh-48px)] bg-[#f5f8ff] px-3 py-3 md:px-4 md:py-4">
+      <div className="mx-auto w-full max-w-[1420px] space-y-3.5">
+        <ProjectSummaryBar
+          projectName={projectName}
+          projectState={projectState}
+          exportProfile={form.exportProfile}
+          exportFolder={resolvedOutputPath}
+          backendHealthy={backendHealthy}
+          currentBatchName={currentBatchName || lastScannedBatchName}
+        />
         <RefreshTipBanner />
-      </div>
-      <div className="col-span-12 space-y-4 lg:col-span-5">
-        {showPathTip ? (
-          <PathTipBanner
-            onDismiss={() => {
-              localStorage.setItem('kiwi_path_tip_dismissed', '1')
-              setShowPathTip(false)
-            }}
-          />
-        ) : null}
 
-        <div className={`${cardClass} p-4`}>
+        <section className={`${cardClass} overflow-hidden bg-[#f8fbff] shadow-[0_1px_2px_rgba(36,65,120,0.08)]`}>
+          <div className="overflow-x-auto px-3 py-3">
+            <div className="grid min-w-[960px] grid-cols-5 gap-2.5">
+              {[
+                {
+                  number: 1,
+                  title: 'Project Setup',
+                  text: 'Save project details once for all batches.',
+                  complete: projectSaved,
+                  active: sidebarStep === 1
+                },
+                {
+                  number: 2,
+                  title: 'Scan a Batch',
+                  text: 'Set import path and scan the next folder.',
+                  complete: hasScannedBatch,
+                  active: sidebarStep === 2
+                },
+                {
+                  number: 3,
+                  title: 'Check Settings',
+                  text: 'Confirm AI and classification configuration.',
+                  complete: hasScannedBatch,
+                  active: sidebarStep === 3
+                },
+                {
+                  number: 4,
+                  title: 'Run the Batch',
+                  text: 'Run processing on the scanned files.',
+                  complete: runCompleted,
+                  active: sidebarStep === 4
+                },
+                {
+                  number: 5,
+                  title: 'Next Batch',
+                  text: 'Move to the next folder and repeat.',
+                  complete: nextBatchPrepared,
+                  active: sidebarStep === 5
+                }
+              ].map((step) => (
+                <div
+                  key={step.number}
+                  className={`rounded-lg border px-3 py-2.5 transition-colors ${
+                    step.complete
+                      ? 'border-[var(--kiwi-green)] bg-[var(--kiwi-green-light)]'
+                      : step.active
+                        ? 'border-[var(--kiwi-blue)] bg-[var(--kiwi-blue-light)]'
+                        : 'border-[var(--kiwi-border)] bg-white/90'
+                  }`}
+                >
+                  <div className="mb-1 flex items-center gap-2">
+                    <span
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                        step.complete
+                          ? 'bg-[var(--kiwi-green)] text-white'
+                          : step.active
+                            ? 'bg-[var(--kiwi-blue)] text-white'
+                            : 'bg-[#eef1f8] text-[var(--kiwi-text-3)]'
+                      }`}
+                    >
+                      {step.complete ? '✓' : step.number}
+                    </span>
+                    <p className="text-[12px] font-semibold text-[var(--kiwi-text)]">{step.title}</p>
+                  </div>
+                  <p className="text-[11px] text-[var(--kiwi-text-3)]">{step.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+          <div className={`${cardClass} h-full space-y-3 p-4 shadow-[0_1px_2px_rgba(36,65,120,0.08)]`}>
           <div className="mb-2 flex items-center gap-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-blue)] text-xs font-bold text-white">
               1
@@ -1461,7 +1630,7 @@ export default function SetupPage() {
             </div>
           </div>
           <p className="mb-3 text-[12px] leading-relaxed text-[var(--kiwi-text-3)]">
-            Set this once at the beginning by pasting your full Export path. You can reuse these project settings for every batch.
+            Set this once at the beginning. These settings can be reused across every batch.
           </p>
 
           {projectState === 'saved' ? (
@@ -1511,7 +1680,7 @@ export default function SetupPage() {
 
               <div className="space-y-1">
                 <label className={`flex items-center gap-1.5 ${labelClass}`}>
-                  Export path (paste full path)
+                  Export folder
                   <HelpIcon title="This is where KIWI saves the organized output. Keep this the same for all batches in one project." />
                 </label>
                 <Input
@@ -1576,13 +1745,68 @@ export default function SetupPage() {
               </Button>
             </div>
           )}
+          {showPathTip ? (
+            <PathTipBanner
+              onDismiss={() => {
+                localStorage.setItem('kiwi_path_tip_dismissed', '1')
+                setShowPathTip(false)
+              }}
+            />
+          ) : null}
+          <div className="space-y-1 rounded-xl border border-[var(--kiwi-border)] bg-white p-3 text-[12.5px]">
+            <button
+              type="button"
+              onClick={() => setLoadExistingOpen((o) => !o)}
+              className="block w-full rounded-[var(--kiwi-radius-sm)] p-2 text-left text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-blue-pale)] hover:text-[var(--kiwi-blue)]"
+            >
+              Load Existing Project
+            </button>
+            <Link
+              href="/settings"
+              className="block rounded-[var(--kiwi-radius-sm)] p-2 text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-blue-pale)] hover:text-[var(--kiwi-blue)]"
+            >
+              Advanced Setup
+            </Link>
+            <button
+              type="button"
+              onClick={handleResetLocalSetupData}
+              className="block w-full rounded-[var(--kiwi-radius-sm)] p-2 text-left text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-red-light)] hover:text-[var(--kiwi-red)]"
+            >
+              Clear Saved Data
+            </button>
+          </div>
+          {loadExistingOpen ? (
+            <ExistingProjectPanel
+              loadExistingOpen={loadExistingOpen}
+              existingPath={existingPath}
+              loading={loading}
+              onToggle={() => setLoadExistingOpen((o) => !o)}
+              onPathChange={setExistingPath}
+              onPastePath={async () => {
+                try {
+                  const text = await navigator.clipboard.readText()
+                  if (text && (text.includes('\\') || text.includes('/'))) {
+                    setExistingPath(text.trim())
+                    setError('')
+                  }
+                } catch {
+                  // clipboard not available
+                }
+              }}
+              onClearPath={() => {
+                setExistingPath('')
+                setError('')
+              }}
+              onReload={handleReload}
+            />
+          ) : null}
         </div>
 
         <div
-          className={`${cardClass} p-4 transition-colors ${
+          className={`${cardClass} h-full p-4 shadow-[0_1px_2px_rgba(36,65,120,0.08)] transition-colors ${
             step2Disabled
               ? 'border-l-4 border-l-[var(--kiwi-text-3)] bg-[var(--kiwi-blue-pale)]/40 opacity-80'
-              : `border-l-4 ${projectState === 'saved' ? 'border-l-[var(--kiwi-green)] bg-[var(--kiwi-green-light)]/30' : 'border-l-[var(--kiwi-blue)]'}`
+              : `border-l-4 ${projectState === 'saved' ? 'border-l-[var(--kiwi-blue)] bg-[var(--kiwi-blue-light)]/35' : 'border-l-[var(--kiwi-blue)]'}`
           }`}
         >
           <div className="mb-2 flex items-center gap-2">
@@ -1593,7 +1817,7 @@ export default function SetupPage() {
             <HelpIcon title="This is the only folder you change when moving from batch_001 to batch_002." />
           </div>
           <p className="mb-3 text-[12px] leading-relaxed text-[var(--kiwi-text-3)]">
-            Paste your Import base path and enter the next batch folder name each run.
+            Paste your import base path, then enter the next batch folder name.
           </p>
           {step2Disabled ? (
             <p className="mb-2 rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white px-3 py-2 text-xs text-[var(--kiwi-text-2)]">
@@ -1604,7 +1828,7 @@ export default function SetupPage() {
           <div className="space-y-2.5">
             <div>
               <label className={`mb-1 flex items-center gap-1.5 ${labelClass}`}>
-                Import path (paste base path)
+                Import path
                 <HelpIcon title="This is the parent folder that contains your batch folders." />
               </label>
               <Input
@@ -1621,7 +1845,7 @@ export default function SetupPage() {
             </div>
             <div>
               <label className={`mb-1 flex items-center gap-1.5 ${labelClass}`}>
-                Next batch folder name
+                Next batch folder
                 <HelpIcon title="Enter only the folder name, such as batch_004, if you are using the saved import path above." />
               </label>
               <Input
@@ -1657,118 +1881,8 @@ export default function SetupPage() {
           </div>
         </div>
 
-        <div className={`${cardClass} p-4 overflow-hidden`}>
-          <button
-            type="button"
-            onClick={() => setLeftReviewSettingsOpen((prev) => !prev)}
-            className="flex w-full items-center justify-between text-left transition-colors hover:bg-[var(--kiwi-blue-pale)] p-0"
-          >
-            <span className="flex items-center gap-1.5 text-sm font-semibold text-[var(--kiwi-text)]">
-              Review AI & Classification Settings
-              <HelpIcon title="Confirm AI, model, workspace, and export settings before processing files." />
-            </span>
-            {leftReviewSettingsOpen ? (
-              <ChevronDown className="h-4 w-4 text-[var(--kiwi-text-2)]" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-[var(--kiwi-text-2)]" />
-            )}
-          </button>
-          {leftReviewSettingsOpen ? (
-            <div className="space-y-2.5 border-t border-[var(--kiwi-border)] pt-2.5 mt-2.5">
-              <p className="text-xs leading-relaxed text-[var(--kiwi-text-3)]">Check these before your first run. Usually no changes needed between batches.</p>
-              <div>
-                <p className="text-xs font-semibold text-[var(--kiwi-text-2)] mb-1.5">Current AI Setup</p>
-                <div className="space-y-0.5 text-xs text-[var(--kiwi-text)]">
-                  <p>Provider: <span className="font-medium">{runSettingsReview.provider}</span></p>
-                  <p>Model: <span className="font-medium">{runSettingsReview.model}</span></p>
-                  <p>Mode: <span className="font-medium">{runSettingsReview.aiMode}</span></p>
-                  <p>Threshold: <span className="font-medium">{runSettingsReview.confidenceThreshold}</span></p>
-                </div>
-              </div>
-              {runSettingsReview.workspaceMappings.length ? (
-                <div>
-                  <p className="text-xs font-semibold text-[var(--kiwi-text-2)] mb-0.5">Workspaces</p>
-                  <p className="text-xs text-[var(--kiwi-text)]">✔ {runSettingsReview.workspaceMappings.length} configured</p>
-                </div>
-              ) : (
-                <p className="text-xs text-[var(--kiwi-text-3)]">No workspace rules configured.</p>
-              )}
-              {runSettingsReview.keywordMappings.length ? (
-                <div>
-                  <p className="text-xs font-semibold text-[var(--kiwi-text-2)] mb-0.5">Keywords / Categories</p>
-                  <p className="text-xs text-[var(--kiwi-text)]">✔ {runSettingsReview.keywordMappings.length} configured</p>
-                </div>
-              ) : (
-                <p className="text-xs text-[var(--kiwi-text-3)]">No keyword rules configured.</p>
-              )}
-              <Link
-                href="/settings"
-                className="inline-flex items-center rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] px-2 py-1 text-xs font-medium text-[var(--kiwi-text-2)] hover:border-[var(--kiwi-blue)] hover:text-[var(--kiwi-blue)]"
-              >
-                Open Full Settings
-              </Link>
-            </div>
-          ) : (
-            <div className="pt-1.5 text-xs text-[var(--kiwi-text-3)]">
-              AI: {runSettingsReview.provider} · Model: {runSettingsReview.model} · Mode: {runSettingsReview.aiMode}
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-1 rounded-xl border border-[var(--kiwi-border)] bg-white p-3 shadow-sm text-[12.5px]">
-          <Link
-            href="/settings"
-            className="block p-2 rounded-[var(--kiwi-radius-sm)] text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-blue-pale)] hover:text-[var(--kiwi-blue)]"
-          >
-            Advanced Setup
-          </Link>
-          <button
-            type="button"
-            onClick={() => setLoadExistingOpen((o) => !o)}
-            className="block w-full text-left p-2 rounded-[var(--kiwi-radius-sm)] text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-blue-pale)] hover:text-[var(--kiwi-blue)]"
-          >
-            Load Existing Project
-          </button>
-          <button
-            type="button"
-            onClick={handleResetLocalSetupData}
-            className="block w-full text-left p-2 rounded-[var(--kiwi-radius-sm)] text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-red-light)] hover:text-[var(--kiwi-red)]"
-          >
-            Clear Saved Data
-          </button>
-        </div>
-
-        {loadExistingOpen ? (
-          <ExistingProjectPanel
-            loadExistingOpen={loadExistingOpen}
-            existingPath={existingPath}
-            loading={loading}
-            onToggle={() => setLoadExistingOpen((o) => !o)}
-            onPathChange={setExistingPath}
-            onPastePath={async () => {
-              try {
-                const text = await navigator.clipboard.readText()
-                if (text && (text.includes('\\') || text.includes('/'))) {
-                  setExistingPath(text.trim())
-                  setError('')
-                }
-              } catch {
-                // clipboard not available
-              }
-            }}
-            onClearPath={() => {
-              setExistingPath('')
-              setError('')
-            }}
-            onReload={handleReload}
-          />
-        ) : null}
-
-      </div>
-
-      <div className="col-span-12 flex min-h-0 flex-col gap-3 lg:col-span-7">
         <div
-          className={`shrink-0 p-4 ${cardClass} transition-colors ${
+          className={`h-full p-4 ${cardClass} shadow-[0_1px_2px_rgba(36,65,120,0.08)] transition-colors ${
             step3Disabled
               ? 'border-l-4 border-l-[var(--kiwi-text-3)] bg-[var(--kiwi-blue-pale)]/40 opacity-80'
               : 'border-l-4 border-l-[var(--kiwi-green)]'
@@ -1781,7 +1895,9 @@ export default function SetupPage() {
             <h3 className="text-[16px] font-semibold leading-snug text-[#151726]">Run Batch</h3>
             <HelpIcon title="Run Batch processes the scanned files using your current settings." />
           </div>
-          <p className="mb-2 text-[12px] leading-relaxed text-[var(--kiwi-text-3)]">Process the files you just scanned in Step 2.</p>
+          <p className="mb-3 text-[12px] leading-relaxed text-[var(--kiwi-text-3)]">
+            Process the files you just scanned using the selected AI and export settings.
+          </p>
           {!hasActiveProject ? (
             <p className="mb-2 rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white px-3 py-1.5 text-xs text-[var(--kiwi-text-2)]">
               Save your project first.
@@ -1791,7 +1907,7 @@ export default function SetupPage() {
               Scan a batch first, then Run Batch will be enabled here.
             </p>
           ) : null}
-          <div className="mb-2 rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white">
+          <div className="mb-2 rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white/95">
             <button
               type="button"
               onClick={() => setReviewSettingsOpen((prev) => !prev)}
@@ -1874,7 +1990,7 @@ export default function SetupPage() {
               </div>
             ) : null}
           </div>
-          <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
             {canRunBatch ? (
               <Button
                 className={`${isRunPrimary ? primaryButtonClass : successButtonClass} w-auto min-w-[140px]`}
@@ -1944,6 +2060,9 @@ export default function SetupPage() {
               {backendChecking ? 'Checking...' : 'Retry'}
             </Button>
           </div>
+          <p className="mt-1 text-[11px] text-[var(--kiwi-text-3)]">
+            If Scan or Run appears stale after batch changes, click Refresh.
+          </p>
           {!sessionToken ? (
             <p className="mt-2 rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-red-light)] px-3 py-1.5 text-xs text-[var(--kiwi-red)]">
               No active project yet. Save your project on the left to begin.
@@ -1952,8 +2071,96 @@ export default function SetupPage() {
           {queueError ? <p className="mt-2 text-xs text-[var(--kiwi-red)]">{queueError}</p> : null}
           {runMessage ? <p className="mt-2 text-xs text-[var(--kiwi-green)]">{runMessage}</p> : null}
         </div>
+        </section>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <section className={`${cardClass} p-4 shadow-[0_1px_2px_rgba(36,65,120,0.08)]`}>
+          <button
+            type="button"
+            onClick={() => setLeftReviewSettingsOpen((prev) => !prev)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <span className="text-sm font-semibold text-[var(--kiwi-text)]">Review AI & Classification Settings</span>
+            {leftReviewSettingsOpen ? (
+              <ChevronDown className="h-4 w-4 text-[var(--kiwi-text-2)]" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-[var(--kiwi-text-2)]" />
+            )}
+          </button>
+          {!leftReviewSettingsOpen ? (
+            <p className="mt-2 rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-blue-pale)] px-3 py-2 text-xs text-[var(--kiwi-text-2)]">
+              Provider: {aiProvider} · Model: {aiModel} · Mode: {aiMode} · Export: {profileLabel[form.exportProfile]}
+            </p>
+          ) : (
+            <div className="mt-3 grid grid-cols-1 gap-3 border-t border-[var(--kiwi-border)] pt-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="space-y-1">
+                <label className={labelClass}>Provider</label>
+                <Select className={selectClass} value={aiProvider} onChange={(e) => setAiProvider(e.target.value)}>
+                  <option value="ollama">Ollama</option>
+                  <option value="claude">Claude (Anthropic)</option>
+                  <option value="openai">OpenAI</option>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className={labelClass}>Model</label>
+                <Select className={selectClass} value={aiModel} onChange={(e) => setAiModel(e.target.value)}>
+                  {availableModels.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className={labelClass}>AI mode</label>
+                <Select className={selectClass} value={aiMode} onChange={(e) => setAiMode(e.target.value)}>
+                  <option value="rules_only">rules_only</option>
+                  <option value="ai_only_unclassified">ai_only_unclassified</option>
+                  <option value="ai_all">ai_all</option>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className={labelClass}>Export profile</label>
+                <Select
+                  className={selectClass}
+                  value={form.exportProfile}
+                  onChange={(e) => setForm({ ...form, exportProfile: e.target.value as typeof form.exportProfile })}
+                >
+                  <option value="anythingllm">AnythingLLM</option>
+                  <option value="open_webui">Open WebUI</option>
+                  <option value="both">Both</option>
+                </Select>
+              </div>
+              <div className="flex flex-wrap items-end gap-2 md:col-span-2 xl:col-span-2">
+                <Button variant="secondary" className={secondaryButtonClass} onClick={handleRefreshModels} disabled={aiBusy}>
+                  Refresh Models
+                </Button>
+                <Button variant="secondary" className={secondaryButtonClass} onClick={handleTestConnection} disabled={aiBusy}>
+                  Test Connection
+                </Button>
+                <Button className={`${primaryButtonClass} !w-auto`} onClick={handleSaveInlineAiSettings} disabled={savingAiSettings || !sessionToken}>
+                  {savingAiSettings ? 'Saving...' : 'Save AI Settings'}
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-end gap-2 md:col-span-2 xl:col-span-3">
+                <Button variant="secondary" className={secondaryButtonClass} onClick={handleSuggestCategories} disabled={suggestionBusy}>
+                  Suggest Categories from Scanned Files
+                </Button>
+                <Button variant="secondary" className={secondaryButtonClass} onClick={handleApplySuggestions} disabled={suggestionBusy}>
+                  Apply Suggestions
+                </Button>
+                <Link href="/settings" className="text-xs text-[var(--kiwi-blue)] hover:underline">
+                  Open full settings
+                </Link>
+              </div>
+              {aiStatus ? <p className="text-xs text-[var(--kiwi-text-2)] md:col-span-2 xl:col-span-3">{aiStatus}</p> : null}
+              {suggestionStatus ? (
+                <p className="text-xs text-[var(--kiwi-text-2)] md:col-span-2 xl:col-span-3">{suggestionStatus}</p>
+              ) : null}
+            </div>
+          )}
+        </section>
+
+        <section className={`${cardClass} flex min-h-0 flex-col gap-2 p-4 shadow-[0_1px_2px_rgba(36,65,120,0.08)]`}>
           <h4 className="pb-1.5 text-[13px] font-semibold text-[#151726] border-b border-[var(--kiwi-border)] flex items-center gap-1.5">
             Current Batch Queue
             <HelpIcon title="These are the files KIWI found in the batch you scanned." />
@@ -2003,17 +2210,17 @@ export default function SetupPage() {
               )
             })}
           </div>
-          <p className="text-[11px] text-[var(--kiwi-text-3)] mb-1">Files: {filteredCurrentBatch.length} of {currentBatch.length}</p>
-          <div className="rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] border-l-4 border-l-[var(--kiwi-green)] bg-white">
+          <p className="mb-1 text-[11px] text-[var(--kiwi-text-3)]">Files: {filteredCurrentBatch.length} of {currentBatch.length}</p>
+          <div className="rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white">
             {renderTable(filteredCurrentBatch, {
               scrollBody: true,
               emptyMessage: 'No files scanned yet. Scan a batch to populate this queue.'
             })}
           </div>
-        </div>
+        </section>
 
         {activeProfile === 'both' && pendingQueue.length > 0 ? (
-        <div className="shrink-0 space-y-1.5">
+        <section className={`${cardClass} shrink-0 space-y-1.5 p-4 shadow-[0_1px_2px_rgba(36,65,120,0.08)]`}>
           <button
             type="button"
             className="w-full text-left pb-1.5 text-[13px] font-semibold text-[#151726] border-b border-[var(--kiwi-border)]"
@@ -2035,11 +2242,9 @@ export default function SetupPage() {
               </div>
             </>
           ) : null}
-        </div>
+        </section>
         ) : null}
       </div>
-      </div>
-    </div>
     </div>
   )
 }
