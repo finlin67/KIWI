@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -40,8 +41,12 @@ class ProjectService:
     def create_project(self, *, raw_folder: Path, output_folder: Path, name: str) -> ProjectContext:
         raw = self._resolve_user_path(raw_folder, must_exist=True)
         out = self._resolve_user_path(output_folder, must_exist=False)
+        if not raw.exists():
+            # Step 1 should be able to persist project settings even when batch folders
+            # are created later; create the raw root proactively.
+            raw.mkdir(parents=True, exist_ok=True)
         if not raw.is_dir():
-            raise ValueError(f"Raw folder does not exist or is not a directory: {raw}")
+            raise ValueError(f"Raw folder does not exist: {raw}")
         out.mkdir(parents=True, exist_ok=True)
         meta_dir = out / PROJECT_DIR_NAME
         meta_dir.mkdir(parents=True, exist_ok=True)
@@ -153,7 +158,8 @@ class ProjectService:
 
     @staticmethod
     def _resolve_user_path(path_value: Path, *, must_exist: bool) -> Path:
-        candidate = path_value.expanduser()
+        raw_input = os.path.expandvars(str(path_value).strip().strip('"').strip("'"))
+        candidate = Path(raw_input).expanduser()
         if candidate.is_absolute():
             return candidate.resolve()
 

@@ -56,6 +56,7 @@ def test_save_and_load_settings_fields(tmp_path) -> None:
         relevance_min_score=3,
         small_file_char_threshold=320,
         preflight_wiki_share_cap=0.40,
+        evidence_pipeline_enabled=True,
     )
     save_classification_config(path, cfg2)
     loaded = load_classification_config(path)
@@ -73,6 +74,7 @@ def test_save_and_load_settings_fields(tmp_path) -> None:
     assert loaded.relevance_min_score == 3
     assert loaded.small_file_char_threshold == 320
     assert loaded.preflight_wiki_share_cap == 0.40
+    assert loaded.evidence_pipeline_enabled is True
     assert loaded.rule_confidence["force_rule"] > 0.0
     assert loaded.rule_confidence["pattern"] > 0.0
     assert loaded.rule_confidence["negative_rule"] > 0.0

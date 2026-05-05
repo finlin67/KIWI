@@ -24,3 +24,23 @@ def preflight(session_token: str = Query(...)) -> dict[str, Any]:
     summary = service.get_preflight_summary(context)
     return {"summary": serialize_context(summary)}
 
+
+@router.get("/evidence-audit")
+def evidence_audit(session_token: str = Query(...)) -> dict[str, Any]:
+    context = get_active_context(session_token)
+    try:
+        from db.repositories import FileRepository  # type: ignore
+        from db.session import Database  # type: ignore
+        from services.evidence_pipeline_service import EvidencePipelineService  # type: ignore
+    except ImportError as exc:
+        raise HTTPException(status_code=500, detail=f"Evidence audit imports failed: {exc}") from exc
+    db = Database(context.db_path)
+    db.connect()
+    try:
+        files = FileRepository(db)
+        service = EvidencePipelineService(files=files, export_root=context.output_folder / "exports")
+        summary = service.audit_summary()
+        return {"summary": serialize_context(summary)}
+    finally:
+        db.close()
+

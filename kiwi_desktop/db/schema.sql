@@ -39,6 +39,21 @@ CREATE TABLE IF NOT EXISTS files (
     confidence REAL,
     case_study_candidate INTEGER NOT NULL DEFAULT 0,
     portfolio_candidate INTEGER NOT NULL DEFAULT 0,
+    normalized_hash TEXT,
+    word_count INTEGER,
+    char_count INTEGER,
+    evidence_score REAL,
+    case_study_readiness TEXT NOT NULL DEFAULT 'none'
+        CHECK (case_study_readiness IN ('none', 'weak', 'moderate', 'strong')),
+    archive_status TEXT NOT NULL DEFAULT 'keep'
+        CHECK (archive_status IN ('keep', 'review', 'archive')),
+    archive_reason TEXT,
+    matched_positive_keywords TEXT,
+    matched_negative_keywords TEXT,
+    duplicate_of INTEGER,
+    suggested_workspaces TEXT,
+    suggested_subfolders TEXT,
+    evidence_card_path TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -48,6 +63,8 @@ CREATE INDEX IF NOT EXISTS idx_files_updated_at ON files (updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_files_extension ON files (extension);
 CREATE INDEX IF NOT EXISTS idx_files_runner ON files (runner_status, id);
 CREATE INDEX IF NOT EXISTS idx_files_workspace ON files (workspace);
+CREATE INDEX IF NOT EXISTS idx_files_normalized_hash ON files (normalized_hash);
+CREATE INDEX IF NOT EXISTS idx_files_archive_status ON files (archive_status);
 
 CREATE TABLE IF NOT EXISTS jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -31,6 +31,7 @@ from services.exporter_service import (
     PROFILE_OPEN_WEBUI,
     ExporterService,
 )
+from services.evidence_pipeline_service import EvidencePipelineService
 from services.normalizer_service import FirstPassNormalizer
 from utils.logging_utils import get_logger
 
@@ -121,7 +122,9 @@ class PipelineRunner:
         "_normalizer",
         "_chunker",
         "_exporter",
+        "_evidence",
         "_export_profile",
+        "_evidence_pipeline_enabled",
         "_classifier",
         "_ai_classifier",
         "_enable_ollama",
@@ -140,6 +143,7 @@ class PipelineRunner:
         min_chunk_words: int = 120,
         export_profile: str = PROFILE_ANYTHINGLLM,
         export_root: Path | None = None,
+        evidence_pipeline_enabled: bool = False,
         classification_config_path: Path | None = None,
         ai_classifier: AIClassifier | None = None,
     ) -> None:
@@ -161,6 +165,9 @@ class PipelineRunner:
             export_root=export_root,
             duplicate_filename_policy=config.duplicate_filename_policy,
         )
+        evidence_root = export_root if export_root is not None else Path.cwd() / "exports"
+        self._evidence = EvidencePipelineService(files=self._files, export_root=evidence_root)
+        self._evidence_pipeline_enabled = evidence_pipeline_enabled
         self._classifier = ClassificationService(config)
         self._enable_ollama = config.enable_ollama
         self._ai_provider = (config.ai_provider or "ollama").strip().lower() or "ollama"
@@ -338,6 +345,32 @@ class PipelineRunner:
                 "category": category,
             }
         )
+        if self._evidence_pipeline_enabled:
+            evidence = self._evidence.process(record=rec, normalized_path=out.output_path, checkpoint=checkpoint)
+            checkpoint.update(
+                {
+                    "evidence_pipeline_enabled": True,
+                    "normalized_hash": evidence.normalized_hash,
+                    "word_count": evidence.word_count,
+                    "char_count": evidence.char_count,
+                    "evidence_score": evidence.evidence_score,
+                    "case_study_readiness": evidence.case_study_readiness,
+                    "archive_status": evidence.archive_status,
+                    "archive_reason": evidence.archive_reason,
+                    "evidence_route": evidence.route,
+                    "matched_positive_keywords": list(evidence.matched_positive_keywords),
+                    "matched_negative_keywords": list(evidence.matched_negative_keywords),
+                    "duplicate_of": evidence.duplicate_of,
+                    "suggested_workspaces": list(evidence.suggested_workspaces),
+                    "suggested_subfolders": list(evidence.suggested_subfolders),
+                    "evidence_card_path": str(evidence.evidence_card_path),
+                    "explainable_routing": (
+                        f"route={evidence.route}; score={evidence.evidence_score}; "
+                        f"words={evidence.word_count}; chars={evidence.char_count}; "
+                        f"archive_status={evidence.archive_status}; archive_reason={evidence.archive_reason}"
+                    ),
+                }
+            )
         self._files.update_stage_checkpoint(
             rec.id,
             json.dumps(checkpoint, ensure_ascii=False),
@@ -502,6 +535,14 @@ class PipelineRunner:
             chunks = []
         if not isinstance(chunk_meta, list):
             chunk_meta = []
+        if self._evidence_pipeline_enabled and str(checkpoint.get("archive_status") or "") == "archive":
+            checkpoint["export_skipped"] = True
+            checkpoint["export_skip_reason"] = str(checkpoint.get("archive_reason") or "archive")
+            self._files.update_stage_checkpoint(
+                rec.id,
+                json.dumps(checkpoint, ensure_ascii=False),
+            )
+            return
 
         source_file = rec.filename or Path(rec.path).name
         result = self._exporter.export(

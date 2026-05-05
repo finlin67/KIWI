@@ -35,6 +35,19 @@ class FileRecord:
     confidence: float | None
     case_study_candidate: bool
     portfolio_candidate: bool
+    normalized_hash: str | None
+    word_count: int | None
+    char_count: int | None
+    evidence_score: float | None
+    case_study_readiness: str
+    archive_status: str
+    archive_reason: str | None
+    matched_positive_keywords: str | None
+    matched_negative_keywords: str | None
+    duplicate_of: int | None
+    suggested_workspaces: str | None
+    suggested_subfolders: str | None
+    evidence_card_path: str | None
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -68,6 +81,19 @@ class FileRecord:
             confidence=_confidence_cell(row["confidence"]),
             case_study_candidate=_sqlite_int_as_bool(row["case_study_candidate"]),
             portfolio_candidate=_sqlite_int_as_bool(row["portfolio_candidate"]),
+            normalized_hash=row["normalized_hash"],
+            word_count=_int_cell(row["word_count"]),
+            char_count=_int_cell(row["char_count"]),
+            evidence_score=_confidence_cell(row["evidence_score"]),
+            case_study_readiness=str(row["case_study_readiness"] or "none"),
+            archive_status=str(row["archive_status"] or "keep"),
+            archive_reason=row["archive_reason"],
+            matched_positive_keywords=row["matched_positive_keywords"],
+            matched_negative_keywords=row["matched_negative_keywords"],
+            duplicate_of=_int_cell(row["duplicate_of"]),
+            suggested_workspaces=row["suggested_workspaces"],
+            suggested_subfolders=row["suggested_subfolders"],
+            evidence_card_path=row["evidence_card_path"],
             created_at=_parse_dt(row["created_at"]),
             updated_at=_parse_dt(row["updated_at"]),
         )
@@ -78,6 +104,15 @@ def _confidence_cell(value: Any) -> float | None:
         return None
     try:
         return round(float(value), 3)
+    except (TypeError, ValueError):
+        return None
+
+
+def _int_cell(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
     except (TypeError, ValueError):
         return None
 

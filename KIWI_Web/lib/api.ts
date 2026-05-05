@@ -320,12 +320,21 @@ export async function getPreflight(): Promise<PreflightResponse> {
   return request(`/api/monitor/preflight?session_token=${encodeURIComponent(session_token)}`)
 }
 
-export async function runExport(export_profile: 'anythingllm' | 'open_webui' | 'both'): Promise<{ results?: Record<string, unknown> }> {
+export async function getEvidenceAudit(): Promise<{ summary?: Record<string, unknown> }> {
+  const session_token = getSessionToken()
+  if (!session_token) throw new Error('Missing session token. Please create or load a project first.')
+  return request(`/api/monitor/evidence-audit?session_token=${encodeURIComponent(session_token)}`)
+}
+
+export async function runExport(
+  export_profile: 'anythingllm' | 'open_webui' | 'both',
+  evidence_pipeline_enabled = false
+): Promise<{ results?: Record<string, unknown> }> {
   const session_token = getSessionToken()
   if (!session_token) throw new Error('Missing session token. Please create or load a project first.')
   return request('/api/exports/run', {
     method: 'POST',
-    body: JSON.stringify({ session_token, export_profile })
+    body: JSON.stringify({ session_token, export_profile, evidence_pipeline_enabled })
   }, RUN_EXPORT_REQUEST_TIMEOUT_MS)
 }
 

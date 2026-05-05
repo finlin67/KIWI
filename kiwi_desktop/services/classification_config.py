@@ -148,6 +148,7 @@ class ClassificationConfig:
     relevance_min_score: int
     small_file_char_threshold: int
     preflight_wiki_share_cap: float
+    evidence_pipeline_enabled: bool
 
     @classmethod
     def defaults(cls) -> "ClassificationConfig":
@@ -177,6 +178,7 @@ class ClassificationConfig:
             relevance_min_score=2,
             small_file_char_threshold=260,
             preflight_wiki_share_cap=0.30,
+            evidence_pipeline_enabled=False,
         )
 
     @classmethod
@@ -264,6 +266,7 @@ class ClassificationConfig:
             relevance_min_score=relevance_min_score,
             small_file_char_threshold=small_file_char_threshold,
             preflight_wiki_share_cap=preflight_wiki_share_cap,
+            evidence_pipeline_enabled=bool(payload.get("evidence_pipeline_enabled", base.evidence_pipeline_enabled)),
         )
 
     def to_dict(self) -> dict[str, object]:
@@ -331,6 +334,7 @@ class ClassificationConfig:
             "relevance_min_score": self.relevance_min_score,
             "small_file_char_threshold": self.small_file_char_threshold,
             "preflight_wiki_share_cap": self.preflight_wiki_share_cap,
+            "evidence_pipeline_enabled": self.evidence_pipeline_enabled,
             "confidence_threshold": self.review_confidence_threshold,
             "low_confidence_threshold": self.review_confidence_threshold,
             "review_confidence_threshold": self.review_confidence_threshold,

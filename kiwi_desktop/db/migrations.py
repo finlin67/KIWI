@@ -54,6 +54,32 @@ def migrate_files_table(conn: sqlite3.Connection) -> None:
         statements.append("ALTER TABLE files ADD COLUMN case_study_candidate INTEGER NOT NULL DEFAULT 0")
     if "portfolio_candidate" not in cols:
         statements.append("ALTER TABLE files ADD COLUMN portfolio_candidate INTEGER NOT NULL DEFAULT 0")
+    if "normalized_hash" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN normalized_hash TEXT")
+    if "word_count" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN word_count INTEGER")
+    if "char_count" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN char_count INTEGER")
+    if "evidence_score" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN evidence_score REAL")
+    if "case_study_readiness" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN case_study_readiness TEXT NOT NULL DEFAULT 'none'")
+    if "archive_status" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN archive_status TEXT NOT NULL DEFAULT 'keep'")
+    if "archive_reason" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN archive_reason TEXT")
+    if "matched_positive_keywords" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN matched_positive_keywords TEXT")
+    if "matched_negative_keywords" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN matched_negative_keywords TEXT")
+    if "duplicate_of" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN duplicate_of INTEGER")
+    if "suggested_workspaces" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN suggested_workspaces TEXT")
+    if "suggested_subfolders" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN suggested_subfolders TEXT")
+    if "evidence_card_path" not in cols:
+        statements.append("ALTER TABLE files ADD COLUMN evidence_card_path TEXT")
     for sql in statements:
         conn.execute(sql)
 
@@ -71,6 +97,8 @@ def migrate_files_table(conn: sqlite3.Connection) -> None:
         "UPDATE files SET review_required = 0 WHERE review_required IS NULL"
     )
     conn.execute("UPDATE files SET ai_used = 0 WHERE ai_used IS NULL")
+    conn.execute("UPDATE files SET case_study_readiness = 'none' WHERE case_study_readiness IS NULL OR TRIM(case_study_readiness) = ''")
+    conn.execute("UPDATE files SET archive_status = 'keep' WHERE archive_status IS NULL OR TRIM(archive_status) = ''")
     conn.execute(
         """
         UPDATE files

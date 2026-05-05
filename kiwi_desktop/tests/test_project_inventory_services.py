@@ -48,6 +48,17 @@ def test_project_try_load_last_project_returns_none_for_missing_project(tmp_path
     assert ProjectService().try_load_last_project() is None
 
 
+def test_project_create_creates_missing_raw_folder(tmp_path: Path) -> None:
+    raw = tmp_path / "new_raw" / "source_batches"
+    out = tmp_path / "out"
+    svc = ProjectService()
+
+    created = svc.create_project(raw_folder=raw, output_folder=out, name="Demo")
+
+    assert created.raw_folder == raw.resolve()
+    assert raw.is_dir()
+
+
 def test_inventory_rows(tmp_path: Path) -> None:
     db_path = tmp_path / "state.sqlite3"
     db = Database(db_path)

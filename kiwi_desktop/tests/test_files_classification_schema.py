@@ -77,6 +77,48 @@ def test_classification_updates_round_trip(tmp_path: Path) -> None:
     assert cleared.ai_used is False
 
 
+def test_evidence_updates_round_trip(tmp_path: Path) -> None:
+    db_path = tmp_path / "state.sqlite3"
+    db = Database(db_path)
+    db.connect()
+    repo = FileRepository(db)
+    p = (tmp_path / "evidence.md").resolve()
+    p.write_text("evidence", encoding="utf-8")
+    rec = repo.insert(path=str(p), display_name="evidence.md")
+
+    repo.update_evidence_fields(
+        rec.id,
+        {
+            "normalized_hash": "hash123",
+            "word_count": 200,
+            "char_count": 1200,
+            "evidence_score": 72.5,
+            "case_study_readiness": "strong",
+            "archive_status": "keep",
+            "archive_reason": "KEEP_HIGH_VALUE",
+            "matched_positive_keywords": '["case study"]',
+            "matched_negative_keywords": "[]",
+            "duplicate_of": None,
+            "suggested_workspaces": '["Case Studies"]',
+            "suggested_subfolders": '["case_studies"]',
+            "evidence_card_path": "cards/evidence.json",
+        },
+    )
+
+    again = repo.get_by_id(rec.id)
+    assert again is not None
+    assert again.normalized_hash == "hash123"
+    assert again.word_count == 200
+    assert again.char_count == 1200
+    assert again.evidence_score == 72.5
+    assert again.case_study_readiness == "strong"
+    assert again.archive_status == "keep"
+    assert again.archive_reason == "KEEP_HIGH_VALUE"
+    assert again.matched_positive_keywords == '["case study"]'
+    assert again.suggested_workspaces == '["Case Studies"]'
+    assert again.evidence_card_path == "cards/evidence.json"
+
+
 def test_migrate_files_table_idempotent(tmp_path: Path) -> None:
     """Second migration pass should not fail on already-migrated DB."""
     from db import migrations

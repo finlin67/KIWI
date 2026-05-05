@@ -9,7 +9,8 @@ const nav = [
   { href: '/settings', label: 'Settings' },
   { href: '/triage', label: 'Triage' },
   { href: '/inventory', label: 'Inventory' },
-  { href: '/batch-prep', label: 'Batch Your Files' }
+  { href: '/batch-prep', label: 'Batch Your Files' },
+  { href: '/evidence-audit', label: 'Evidence Audit' }
 ] as const
 
 function navIsActive(pathname: string | null, href: string) {

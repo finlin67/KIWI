@@ -26,6 +26,9 @@ SELECT id, path, filename, extension, file_created_at, file_modified_at,
        subfolder, matched_by, classification_reason, review_required, ai_used, content_hash,
        confidence,
        case_study_candidate, portfolio_candidate,
+       normalized_hash, word_count, char_count, evidence_score, case_study_readiness,
+       archive_status, archive_reason, matched_positive_keywords, matched_negative_keywords,
+       duplicate_of, suggested_workspaces, suggested_subfolders, evidence_card_path,
        created_at, updated_at
 FROM files
 """
@@ -411,6 +414,36 @@ class FileRepository:
             """,
             (1 if used else 0, file_id),
         )
+        conn.commit()
+
+    def update_evidence_fields(self, file_id: int, values: dict[str, object]) -> None:
+        allowed = {
+            "normalized_hash",
+            "word_count",
+            "char_count",
+            "evidence_score",
+            "case_study_readiness",
+            "archive_status",
+            "archive_reason",
+            "matched_positive_keywords",
+            "matched_negative_keywords",
+            "duplicate_of",
+            "suggested_workspaces",
+            "suggested_subfolders",
+            "evidence_card_path",
+        }
+        fragments: list[str] = []
+        params: list[object] = []
+        for key, value in values.items():
+            if key in allowed:
+                fragments.append(f"{key} = ?")
+                params.append(value)
+        if not fragments:
+            return
+        fragments.append("updated_at = datetime('now')")
+        params.append(file_id)
+        conn = self._db.connect()
+        conn.execute(f"UPDATE files SET {', '.join(fragments)} WHERE id = ?", params)
         conn.commit()
 
     def list_by_stage(self, stage: str, *, limit: int = 100) -> Sequence[FileRecord]:
