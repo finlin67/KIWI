@@ -187,13 +187,15 @@ export default function InventoryPage() {
   )
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
+    <div className="mx-auto max-w-[1780px] space-y-4">
       <div>
+        <p className="text-[11px] font-extrabold uppercase text-[var(--kiwi-text-3)]">Inventory</p>
         <h1 className="text-xl font-bold text-[#1a1a2e]">Inventory — All Processed Files</h1>
         <p className="mt-1 text-sm text-[#4a4a6a]">Read-only list from the project queue endpoint.</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <section className="rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white p-4 shadow-[var(--kiwi-shadow)]">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <Input
           className={`max-w-md ${inputLight}`}
           placeholder="Filter by filename…"
@@ -215,7 +217,7 @@ export default function InventoryPage() {
         </Select>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         {[
           { key: 'all', label: 'All' },
           { key: 'ai', label: 'AI Only' },
@@ -246,9 +248,9 @@ export default function InventoryPage() {
         })}
       </div>
 
-      {error ? <p className="text-sm text-[#c92a2a]">{error}</p> : null}
+      {error ? <p className="mt-3 text-sm text-[#c92a2a]">{error}</p> : null}
 
-      <p className="text-sm text-[#4a4a6a]">
+      <p className="mt-3 text-sm text-[#4a4a6a]">
         <strong className="text-[#1a1a2e]">Total files:</strong> {rows.length}
         {filter.trim() ? (
           <>
@@ -258,7 +260,7 @@ export default function InventoryPage() {
         ) : null}
       </p>
 
-      <div className="overflow-hidden rounded-xl border border-[#dde1f0] bg-white shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-[var(--kiwi-radius)] border border-[#dde1f0] bg-white">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="bg-[#eef0f7] text-left text-[11px] font-medium uppercase tracking-wide text-[#4a4a6a]">
@@ -300,6 +302,7 @@ export default function InventoryPage() {
           </table>
         </div>
       </div>
+      </section>
     </div>
   )
 }

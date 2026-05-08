@@ -203,26 +203,26 @@ export default function TriagePage() {
   const showEmpty = sessionToken && !loading && rows.length === 0
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-[1780px] space-y-4">
       <PageHeader
         title="Triage — Review Unclassified Files"
         subtitle="These files could not be automatically classified. Assign each to a workspace before running this batch."
       />
 
       {showMissingToken ? (
-        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--danger)]">
+        <div className="rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white px-4 py-3 text-sm text-[var(--kiwi-red)] shadow-[var(--kiwi-shadow)]">
           No active project. Go to Home and create or load a project first.
         </div>
       ) : null}
 
       {error ? (
-        <div className="rounded-[var(--radius)] border border-[rgba(184,64,64,0.35)] bg-[rgba(184,64,64,0.08)] px-4 py-3 text-sm text-[var(--danger)]">
+        <div className="rounded-[var(--kiwi-radius)] border border-[var(--kiwi-red-light)] bg-[var(--kiwi-red-light)] px-4 py-3 text-sm text-[var(--kiwi-red)]">
           {error}
         </div>
       ) : null}
 
       {showEmpty ? (
-        <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-white p-6">
+        <div className="rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white p-6 shadow-[var(--kiwi-shadow)]">
           <p className="text-base font-medium text-[var(--text)]">✅ All files are classified and ready to run.</p>
           <Button className="mt-4" onClick={goRunQueue}>
             Run This Batch →
@@ -232,11 +232,11 @@ export default function TriagePage() {
 
       {!showMissingToken && !showEmpty ? (
         <>
-          <div className="rounded-[var(--radius)] border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--text2)]">
+          <div className="rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white px-4 py-3 text-sm text-[var(--kiwi-text-2)] shadow-[var(--kiwi-shadow)]">
             {needsReviewCount} files need review | {assignedCount} already assigned | Run This Batch when ready →
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius)] border border-[var(--border)] bg-white px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2 rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white px-3 py-2 shadow-[var(--kiwi-shadow)]">
             <span className="text-sm text-[var(--text2)]">Assign all visible to:</span>
             <Select
               className="h-8 w-52 rounded text-sm"
@@ -261,9 +261,9 @@ export default function TriagePage() {
             </Button>
           </div>
 
-          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)]">
+          <div className="overflow-hidden rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white shadow-[var(--kiwi-shadow)]">
             <table className="w-full text-sm">
-              <thead className="bg-[var(--bg3)] text-left text-[11px] uppercase tracking-[0.06em] text-[var(--text3)]">
+              <thead className="bg-[var(--kiwi-blue-pale)] text-left text-[11px] uppercase text-[var(--kiwi-text-2)]">
                 <tr className="h-10">
                   <th className="px-3">filename</th>
                   <th className="px-3">current workspace</th>
@@ -275,7 +275,7 @@ export default function TriagePage() {
                 {rows.map((row) => (
                   <tr
                     key={row.rowKey}
-                    className={`border-t border-[var(--border)] transition-colors ${row.assigned ? 'bg-[var(--kiwi-green-light)]' : 'bg-white hover:bg-[var(--kiwi-blue-pale)]'}`}
+                    className={`border-t border-[var(--kiwi-border)] transition-colors ${row.assigned ? 'bg-[var(--kiwi-green-light)]' : 'bg-white hover:bg-[var(--kiwi-blue-pale)]'}`}
                   >
                     <td className="px-3 py-2 text-[var(--text)]">{row.filename}</td>
                     <td className="px-3 py-2 text-[var(--text2)]">{row.workspace || 'unassigned'}</td>

@@ -1,79 +1,36 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-
-const nav = [
-  { href: '/setup', label: 'Home' },
-  { href: '/settings', label: 'Settings' },
-  { href: '/triage', label: 'Triage' },
-  { href: '/inventory', label: 'Inventory' },
-  { href: '/batch-prep', label: 'Batch Your Files' },
-  { href: '/evidence-audit', label: 'Evidence Audit' }
-] as const
-
-function navIsActive(pathname: string | null, href: string) {
-  if (href === '/setup') return pathname === '/setup' || pathname === '/'
-  return pathname === href
-}
 
 export function TopBar() {
   const pathname = usePathname()
-
   const legacyQueueBanner = pathname === '/queue' || pathname === '/monitor'
-  const showFullTitle = pathname === '/setup' || pathname === '/'
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-12 w-full shrink-0 items-center bg-[#102f4b] px-4 md:px-8">
-        <div className="flex w-full min-w-0 items-center gap-4 md:gap-6">
-          <Link href="/setup" className="shrink-0" aria-label="Go to KIWI setup">
-            <Image
-              src="/kiwi-bird.png"
-              alt="KIWI"
-              width={132}
-              height={40}
-              priority
-              className="h-10 w-auto"
-            />
-          </Link>
-          {showFullTitle ? (
-            <span className="hidden min-w-0 truncate text-[1.05rem] font-semibold text-white/95 md:block">
-              Knowledge Intake Workbench Intelligence: Developer Guide
+      <header className="sticky top-0 z-30 border-b border-[var(--kiwi-border)] bg-[var(--kiwi-bg)] px-3 py-3 backdrop-blur md:px-5">
+        <div className="flex min-h-[70px] w-full items-center justify-between gap-4 rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white px-4 py-3 shadow-[var(--kiwi-shadow)]">
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase text-[var(--kiwi-text-3)]">Production Workspace</p>
+            <h1 className="truncate text-xl font-extrabold text-[var(--kiwi-text)] md:text-2xl">
+              Knowledge Intake Workbench Intelligence - KIWI
+            </h1>
+          </div>
+          <div className="hidden shrink-0 flex-wrap items-center justify-end gap-2 md:flex">
+            <span className="inline-flex rounded-full bg-[var(--kiwi-green-light)] px-3 py-1 text-xs font-extrabold text-[var(--kiwi-green)]">
+              Backend: Live Local Service
             </span>
-          ) : null}
-
-          <nav className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-6 sm:gap-8 md:gap-10">
-            {nav.map((item) => {
-              const active = navIsActive(pathname, item.href)
-              const isBatchLink = item.href === '/batch-prep'
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`shrink-0 text-[0.95rem] transition-colors ${
-                    active
-                      ? 'font-bold text-white underline decoration-white underline-offset-4'
-                      : isBatchLink
-                        ? 'font-bold text-[#57e578] hover:text-[#6ff089]'
-                        : 'font-semibold text-white hover:text-white'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </nav>
-
-          <Link
-            href="/help"
-            className={`shrink-0 text-[0.95rem] font-semibold transition-colors ${
-              pathname === '/help' ? 'text-white underline decoration-white underline-offset-4' : 'text-white/95 hover:text-white'
-            }`}
-          >
-            Help
-          </Link>
+            <span className="inline-flex rounded-full bg-[var(--kiwi-blue-light)] px-3 py-1 text-xs font-extrabold text-[var(--kiwi-blue)]">
+              Profile: Configurable
+            </span>
+            <Link
+              href="/help"
+              className="inline-flex rounded-full bg-[#eef0f7] px-3 py-1 text-xs font-extrabold text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-blue-pale)] hover:text-[var(--kiwi-blue)]"
+            >
+              Help
+            </Link>
+          </div>
         </div>
       </header>
 

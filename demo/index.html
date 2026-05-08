@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Knowledge Intake Workbench Intelligence - KIWI Demo</title>
+    <meta
+      name="description"
+      content="Static interactive demo of Knowledge Intake Workbench Intelligence - KIWI."
+    >
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Demo navigation">
+        <a class="brand" href="#home" data-page-link="home">
+          <img src="assets/kiwi-bird.png" alt="KIWI logo">
+          <span>
+            <strong>KIWI</strong>
+            <small>Knowledge Intake Workbench Intelligence</small>
+          </span>
+        </a>
+
+        <nav class="nav-list">
+          <a class="nav-link active" href="#home" data-page-link="home">Home</a>
+          <a class="nav-link" href="#settings" data-page-link="settings">Settings</a>
+          <a class="nav-link" href="#triage" data-page-link="triage">Triage</a>
+          <a class="nav-link" href="#inventory" data-page-link="inventory">Inventory</a>
+          <a class="nav-link" href="#batch" data-page-link="batch">Batch Your Files</a>
+        </nav>
+
+        <div class="sidebar-panel">
+          <p class="eyebrow">Demo Mode</p>
+          <p>This is a static web demo. Buttons simulate the KIWI workflow without reading local files.</p>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Interactive HTML Demo</p>
+            <h1>Knowledge Intake Workbench Intelligence - KIWI</h1>
+          </div>
+          <div class="status-strip" aria-label="Demo status">
+            <span class="pill success">Backend: Simulated Online</span>
+            <span class="pill info">Profile: Both</span>
+            <span class="pill neutral">Batch: batch_003</span>
+          </div>
+        </header>
+
+        <section class="page active" id="page-home" data-page="home" aria-labelledby="home-title">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Home</p>
+              <h2 id="home-title">Run a repeatable document intake cycle</h2>
+              <p>
+                KIWI helps operators scan a batch, classify files, review uncertain items, and export organized
+                evidence for downstream tools.
+              </p>
+            </div>
+            <button class="button primary" data-demo-action="scan">Scan Batch</button>
+          </div>
+
+          <div class="workflow-grid">
+            <article class="step-card complete">
+              <span>1</span>
+              <h3>Project Setup</h3>
+              <p>Create or load one project record with import and export targets.</p>
+            </article>
+            <article class="step-card complete">
+              <span>2</span>
+              <h3>Folder Targets</h3>
+              <p>Select the current batch folder and downstream export profile.</p>
+            </article>
+            <article class="step-card active-step">
+              <span>3</span>
+              <h3>Scan and Classify</h3>
+              <p>Apply rules, optional AI assistance, and workspace mapping.</p>
+            </article>
+            <article class="step-card">
+              <span>4</span>
+              <h3>Review and Export</h3>
+              <p>Resolve triage items, then export clean folders and manifests.</p>
+            </article>
+          </div>
+
+          <div class="two-col">
+            <article class="card">
+              <div class="card-title">
+                <h3>Current Project</h3>
+                <span class="pill warning">Unsaved changes</span>
+              </div>
+              <div class="form-grid">
+                <label>
+                  <span>Project Name</span>
+                  <input value="kiwi-general-demo" readonly>
+                </label>
+                <label>
+                  <span>Import Path</span>
+                  <input value="C:\Demo\KIWI\incoming\batch_003" readonly>
+                </label>
+                <label>
+                  <span>Export Folder</span>
+                  <input value="C:\Demo\KIWI\exports" readonly>
+                </label>
+                <label>
+                  <span>Export Profile</span>
+                  <select>
+                    <option>AnythingLLM and Open WebUI</option>
+                  </select>
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="button secondary">Load Existing Project</button>
+                <button class="button primary">Update Project</button>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-title">
+                <h3>Batch Run</h3>
+                <span class="pill success" id="run-state">Ready</span>
+              </div>
+              <div class="metric-grid">
+                <div class="metric">
+                  <span>Total files</span>
+                  <strong id="metric-total">225</strong>
+                </div>
+                <div class="metric">
+                  <span>Classified</span>
+                  <strong id="metric-classified">184</strong>
+                </div>
+                <div class="metric">
+                  <span>Needs review</span>
+                  <strong id="metric-review">29</strong>
+                </div>
+                <div class="metric">
+                  <span>Duplicates</span>
+                  <strong id="metric-duplicates">12</strong>
+                </div>
+              </div>
+              <div class="progress-track" aria-label="Demo run progress">
+                <span id="progress-bar" style="width: 72%"></span>
+              </div>
+              <div class="button-row">
+                <button class="button secondary" data-demo-action="scan">Refresh Scan</button>
+                <button class="button primary" data-demo-action="run">Run Batch</button>
+                <button class="button secondary" data-page-link="triage">Open Triage</button>
+              </div>
+            </article>
+          </div>
+
+          <article class="card">
+            <div class="card-title">
+              <h3>Current Batch Queue</h3>
+              <div class="filter-chips">
+                <button class="chip active" data-home-filter="all">All</button>
+                <button class="chip" data-home-filter="ai">AI Only</button>
+                <button class="chip" data-home-filter="review">Needs Review</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>File ID</th>
+                    <th>Filename</th>
+                    <th>Workspace</th>
+                    <th>Evidence Route</th>
+                    <th>Status</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody id="home-table"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="page" id="page-settings" data-page="settings" aria-labelledby="settings-title">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Settings</p>
+              <h2 id="settings-title">Tune paths, AI behavior, and classification rules</h2>
+              <p>These controls show how KIWI can be adapted to each user's project and preferred review style.</p>
+            </div>
+            <button class="button primary" data-toast="Settings saved for demo">Save Settings</button>
+          </div>
+
+          <div class="two-col">
+            <article class="card">
+              <h3>Default Paths</h3>
+              <div class="form-grid">
+                <label>
+                  <span>Import base path</span>
+                  <input value="C:\Users\Demo\Documents\KIWI\import">
+                </label>
+                <label>
+                  <span>Export base path</span>
+                  <input value="C:\Users\Demo\Documents\KIWI\export">
+                </label>
+              </div>
+              <p class="help-text">These are demonstration values. The hosted demo never reads from these paths.</p>
+            </article>
+
+            <article class="card">
+              <h3>AI Configuration</h3>
+              <div class="form-grid">
+                <label>
+                  <span>Provider</span>
+                  <select>
+                    <option>Ollama</option>
+                    <option>OpenAI</option>
+                    <option>Claude</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Model</span>
+                  <select>
+                    <option>qwen2.5:7b-instruct</option>
+                    <option>llama3.2:3b</option>
+                  </select>
+                </label>
+                <label>
+                  <span>AI Mode</span>
+                  <select>
+                    <option>ai_only_unclassified</option>
+                    <option>rules_only</option>
+                    <option>ai_all</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Confidence threshold</span>
+                  <input type="range" min="50" max="95" value="65">
+                </label>
+              </div>
+              <div class="button-row">
+                <button class="button secondary" data-toast="Models refreshed">Refresh Models</button>
+                <button class="button secondary" data-toast="Connection test passed">Test Connection</button>
+              </div>
+            </article>
+          </div>
+
+          <article class="card">
+            <div class="card-title">
+              <h3>Workspaces and Keywords</h3>
+              <button class="button secondary" data-toast="3 demo suggestions applied">Apply Suggestions</button>
+            </div>
+            <div class="settings-columns">
+              <div>
+                <p class="section-label">Workspaces</p>
+                <ul class="rule-list">
+                  <li><strong>Finance</strong><span>invoices, reconciliation, receipts</span></li>
+                  <li><strong>Client Ops</strong><span>kickoff, status, requirements</span></li>
+                  <li><strong>Delivery</strong><span>migration, timeline, implementation</span></li>
+                  <li><strong>Archive</strong><span>duplicate, old export, superseded</span></li>
+                </ul>
+              </div>
+              <div>
+                <p class="section-label">Keyword Suggestions</p>
+                <div class="suggestion-list">
+                  <label><input type="checkbox" checked> Workspace: finance - 48 evidence hits</label>
+                  <label><input type="checkbox" checked> Company: acme - client_ops</label>
+                  <label><input type="checkbox" checked> Project: migration - delivery</label>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="page" id="page-triage" data-page="triage" aria-labelledby="triage-title">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Triage</p>
+              <h2 id="triage-title">Review unclassified files</h2>
+              <p>Assign uncertain files to a workspace before running or exporting the batch.</p>
+            </div>
+            <button class="button primary" data-triage-action="assign-all">Assign All Visible</button>
+          </div>
+
+          <div class="summary-band">
+            <span><strong id="triage-open-count">5</strong> files need review</span>
+            <span><strong id="triage-assigned-count">1</strong> already assigned</span>
+            <span>Bulk workspace:
+              <select id="bulk-workspace">
+                <option>Finance</option>
+                <option>Client Ops</option>
+                <option>Delivery</option>
+                <option>Archive</option>
+                <option>Skip</option>
+              </select>
+            </span>
+          </div>
+
+          <article class="card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Filename</th>
+                    <th>Current workspace</th>
+                    <th>Assign to</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="triage-table"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="page" id="page-inventory" data-page="inventory" aria-labelledby="inventory-title">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Inventory</p>
+              <h2 id="inventory-title">All processed files</h2>
+              <p>Search and filter the project inventory by classification method, workspace, status, and review state.</p>
+            </div>
+          </div>
+
+          <article class="card">
+            <div class="toolbar">
+              <input id="inventory-search" placeholder="Filter by filename...">
+              <select id="inventory-filter">
+                <option value="all">All files</option>
+                <option value="ai">AI used</option>
+                <option value="rules">Rules only</option>
+                <option value="review">Needs review</option>
+              </select>
+              <button class="button secondary" data-inventory-reset>Reset</button>
+            </div>
+            <div class="metric-grid compact">
+              <div class="metric"><span>Total files</span><strong>225</strong></div>
+              <div class="metric"><span>AI assisted</span><strong>41</strong></div>
+              <div class="metric"><span>Rules only</span><strong>184</strong></div>
+              <div class="metric"><span>Review required</span><strong>29</strong></div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>File ID</th>
+                    <th>Filename</th>
+                    <th>Workspace</th>
+                    <th>Status</th>
+                    <th>Matched By</th>
+                    <th>Updated</th>
+                  </tr>
+                </thead>
+                <tbody id="inventory-table"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="page" id="page-batch" data-page="batch" aria-labelledby="batch-title">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Batch Your Files</p>
+              <h2 id="batch-title">Split large folders into manageable batches</h2>
+              <p>Use this workflow before KIWI processing when a source folder contains hundreds or thousands of files.</p>
+            </div>
+            <button class="button primary" data-batch-preview>Preview Batches</button>
+          </div>
+
+          <div class="two-col">
+            <article class="card">
+              <h3>Batch Prep</h3>
+              <div class="notice">Recommended: 300-500 files per batch. Use copy mode first so originals stay untouched.</div>
+              <div class="form-grid">
+                <label>
+                  <span>Source folder</span>
+                  <input value="C:\Demo\LargeSourceFolder">
+                </label>
+                <label>
+                  <span>Output folder</span>
+                  <input value="C:\Demo\KIWI\prepared_batches">
+                </label>
+                <label>
+                  <span>Batch size</span>
+                  <input id="batch-size" type="number" min="1" value="300">
+                </label>
+                <label>
+                  <span>Copy mode</span>
+                  <select>
+                    <option>Copy files</option>
+                    <option>Move files</option>
+                  </select>
+                </label>
+              </div>
+              <div class="toggle-list">
+                <label><input type="checkbox" checked> Remove empty files</label>
+                <label><input type="checkbox" checked> Detect near-empty text files</label>
+                <label><input type="checkbox" checked> Create manifest CSV</label>
+              </div>
+              <div class="button-row">
+                <button class="button secondary" data-batch-preview>Preview Batches</button>
+                <button class="button primary" data-batch-create>Create Batches</button>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-title">
+                <h3>Preview / Results</h3>
+                <span class="pill neutral" id="batch-result-pill">Waiting</span>
+              </div>
+              <div id="batch-results" class="result-panel">
+                <p>Preview batches first. Results will appear here.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>

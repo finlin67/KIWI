@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, FolderOpen, Info } from 'lucide-react'
@@ -35,7 +35,7 @@ const PROJECT_SYNC_KEY = 'kiwi_project_sync_signature'
 const LEFT_REVIEW_SETTINGS_OPEN_KEY = 'kiwi_left_review_settings_open'
 const DEFAULT_IMPORT_BASE = 'C:\\Users\\YourName\\Documents\\KIWI\\import'
 const DEFAULT_EXPORT_BASE = 'C:\\Users\\YourName\\Documents\\KIWI\\export'
-const cardClass = 'rounded-xl border border-[var(--kiwi-border)] bg-white shadow-sm'
+const cardClass = 'rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white shadow-[var(--kiwi-shadow)]'
 const helpTextClass = 'text-[12.5px] leading-relaxed text-[var(--kiwi-text-3)]'
 const labelClass = 'text-xs font-semibold text-[var(--kiwi-text-2)]'
 const secondaryButtonClass =
@@ -44,6 +44,8 @@ const primaryButtonClass =
   'h-10 w-full !rounded-[var(--kiwi-radius)] !bg-[var(--kiwi-blue)] !px-4 !py-2 !text-sm !font-semibold !text-white transition-colors duration-150 hover:!bg-[#2f4ac5]'
 const successButtonClass =
   'h-10 w-full !rounded-[var(--kiwi-radius)] !bg-[var(--kiwi-green)] !px-4 !py-2 !text-sm !font-semibold !text-white hover:!bg-[#27863a]'
+const expandPillClass =
+  'inline-flex items-center rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-blue)] bg-[var(--kiwi-blue-light)] px-3 py-1 text-xs font-semibold text-[var(--kiwi-blue)]'
 const cardHeaderBorderClass = 'border-b border-[var(--kiwi-border)] pb-2'
 const isDevMode = process.env.NODE_ENV !== 'production'
 
@@ -237,7 +239,7 @@ function ProjectSummaryBar({
 }) {
   const stateLabel = projectState === 'saved' ? 'Saved' : projectState === 'editing' ? 'Unsaved changes' : 'Unsaved'
   return (
-    <div className="col-span-12 rounded-xl border border-[var(--kiwi-border)] bg-[#f8faff] px-4 py-2 md:px-5">
+    <div className="col-span-12 rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white px-4 py-3 shadow-[var(--kiwi-shadow)] md:px-5">
       <div className="flex flex-wrap items-start justify-between gap-2 md:gap-2.5 text-xs text-[var(--kiwi-text-2)]">
         <div className="flex flex-wrap items-center gap-1.5">
         <span className="inline-flex items-center rounded-full bg-[var(--kiwi-blue-pale)] px-3 py-1 font-medium text-[var(--kiwi-blue)]">
@@ -273,7 +275,9 @@ function ProjectSummaryBar({
           Backend: {backendHealthy === true ? 'Online' : backendHealthy === false ? 'Offline' : 'Checking'}
         </span>
         </div>
-        <p className="text-xs text-[var(--kiwi-text-3)]">Current batch: {currentBatchName || 'None'}</p>
+        <p className="rounded-full bg-[#eef0f7] px-3 py-1 text-xs font-extrabold text-[var(--kiwi-text-2)]">
+          Current batch: {currentBatchName || 'None'}
+        </p>
       </div>
     </div>
   )
@@ -327,16 +331,16 @@ function QuickStartModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="space-y-4 text-sm leading-relaxed text-[var(--kiwi-text-2)]">
           <div>
-            <p className="font-semibold text-[var(--kiwi-text)]">1. Project Basics</p>
-            <p>Enter a project name, import path, export folder, and export profile. Click Save Project or Update Project before scanning.</p>
+            <p className="font-semibold text-[var(--kiwi-text)]">1. Project Setup</p>
+            <p>Create or load a KIWI project, then save or update the project record.</p>
           </div>
           <div>
-            <p className="font-semibold text-[var(--kiwi-text)]">2. Batch Source</p>
-            <p>Keep the import path as the parent folder, then enter only the next batch folder name such as batch_001.</p>
+            <p className="font-semibold text-[var(--kiwi-text)]">2. Folder Targets</p>
+            <p>Choose the import path, next batch folder, export folder, and export profile.</p>
           </div>
           <div>
-            <p className="font-semibold text-[var(--kiwi-text)]">3. Review & Run</p>
-            <p>Click Scan Batch, confirm the settings, then run the batch. Use Start Next Batch to advance to the next folder.</p>
+            <p className="font-semibold text-[var(--kiwi-text)]">3. AI Setup</p>
+            <p>Click Scan Batch, confirm AI and backend settings, then run the batch. Use Start Next Batch to advance.</p>
           </div>
         </div>
       </div>
@@ -447,11 +451,14 @@ function ExistingProjectPanel({
           <FolderOpen className="h-5 w-5 text-[var(--kiwi-blue)]" />
           Load Existing Project
         </span>
-        {loadExistingOpen ? (
-          <ChevronDown className="h-5 w-5 text-[var(--kiwi-text-2)]" />
-        ) : (
-          <ChevronRight className="h-5 w-5 text-[var(--kiwi-text-2)]" />
-        )}
+        <span className="flex items-center gap-2">
+          <span className={expandPillClass}>{loadExistingOpen ? 'Collapse' : 'Expand'}</span>
+          {loadExistingOpen ? (
+            <ChevronDown className="h-5 w-5 text-[var(--kiwi-blue)]" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-[var(--kiwi-blue)]" />
+          )}
+        </span>
       </button>
       {loadExistingOpen ? (
         <div className="space-y-4 border-t border-[var(--kiwi-border)] px-4 pb-4 pt-4">
@@ -548,6 +555,14 @@ function SidebarStep({
 }
 
 export default function SetupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SetupPageContent />
+    </Suspense>
+  )
+}
+
+function SetupPageContent() {
   const searchParams = useSearchParams()
   const { setProject } = useProjectContext()
   const initialFormState = {
@@ -600,6 +615,7 @@ export default function SetupPage() {
   const [pendingOpen, setPendingOpen] = useState(false)
   const [reviewSettingsOpen, setReviewSettingsOpen] = useState(false)
   const [leftReviewSettingsOpen, setLeftReviewSettingsOpen] = useState(true)
+  const [advancedAiDetailsOpen, setAdvancedAiDetailsOpen] = useState(false)
   const [queueAiFilter, setQueueAiFilter] = useState<'all' | 'ai' | 'rules'>('all')
   const [queueMatchedByFilter, setQueueMatchedByFilter] = useState('all')
   const [queueNeedsReviewOnly, setQueueNeedsReviewOnly] = useState(false)
@@ -1359,6 +1375,39 @@ export default function SetupPage() {
     return counts
   }, [currentBatch, pendingQueue])
 
+  const batchDashboardStats = useMemo(() => {
+    const rows = [...currentBatch, ...pendingQueue]
+    const total = rows.length || lastScannedFileCount
+    let needsReview = 0
+    let duplicates = 0
+    let classified = 0
+
+    for (const row of rows) {
+      const status = String(row.status ?? '').trim().toLowerCase()
+      const nextStage = String(row.next_stage ?? '').trim().toLowerCase()
+      const workspace = String(row.workspace ?? '').trim()
+      const reviewRequiredRaw = String(row.review_required ?? '').trim().toLowerCase()
+      const reviewRequired =
+        reviewRequiredRaw === '1' ||
+        reviewRequiredRaw === 'true' ||
+        status.includes('review') ||
+        nextStage.includes('review')
+
+      if (reviewRequired) needsReview += 1
+      if (status.includes('duplicate') || nextStage.includes('duplicate')) duplicates += 1
+      if (!reviewRequired && (workspace || ['done', 'complete', 'exported', 'queued', 'new'].includes(status))) {
+        classified += 1
+      }
+    }
+
+    if (!rows.length && total > 0) {
+      classified = Math.max(0, total - needsReview)
+    }
+
+    const progress = total > 0 ? Math.min(100, Math.round((classified / total) * 100)) : 0
+    return { total, classified, needsReview, duplicates, progress }
+  }, [currentBatch, pendingQueue, lastScannedFileCount])
+
   const renderTable = (rows: Record<string, unknown>[], opts?: { scrollBody?: boolean; emptyMessage?: string }) => {
     const tableInner = (
       <table className="w-full text-sm">
@@ -1671,8 +1720,8 @@ export default function SetupPage() {
               : 3
 
   return (
-    <div className="min-h-[calc(100vh-48px)] bg-[#f5f8ff] px-3 py-3 md:px-4 md:py-4">
-      <div className="mx-auto w-full max-w-[1420px] space-y-3.5">
+    <div className="min-h-screen bg-[var(--kiwi-bg)]">
+      <div className="mx-auto w-full max-w-[1780px] space-y-4">
         <ProjectSummaryBar
           projectName={projectName}
           projectState={projectState}
@@ -1683,59 +1732,52 @@ export default function SetupPage() {
         />
         <RefreshTipBanner />
 
-        <section className={`${cardClass} overflow-hidden bg-[#f8fbff] shadow-[0_1px_2px_rgba(36,65,120,0.08)]`}>
+        <section className={`${cardClass} overflow-hidden`}>
           <div className="overflow-x-auto px-3 py-3">
-            <div className="grid min-w-[960px] grid-cols-5 gap-2.5">
+            <div className="grid min-w-[860px] grid-cols-4 gap-3">
               {[
                 {
                   number: 1,
-                  title: 'Project Basics',
-                  text: 'Name the project and choose where KIWI should save exports.',
+                  title: 'Project Setup',
+                  text: 'Create or load one project record with import and export targets.',
                   complete: projectSaved,
                   active: sidebarStep === 1
                 },
                 {
                   number: 2,
-                  title: 'Batch Source',
-                  text: 'Choose the folder KIWI should scan and set the next batch name.',
+                  title: 'Folder Targets',
+                  text: 'Select the current batch folder and downstream export profile.',
                   complete: hasScannedBatch,
                   active: sidebarStep === 2
                 },
                 {
                   number: 3,
-                  title: 'Review & Run',
-                  text: 'Confirm settings, then run the scanned batch.',
-                  complete: hasScannedBatch,
+                  title: 'Scan and Classify',
+                  text: 'Apply rules, optional AI assistance, and workspace mapping.',
+                  complete: runCompleted,
                   active: sidebarStep === 3
                 },
                 {
                   number: 4,
-                  title: 'Run the Batch',
-                  text: 'Run processing on the scanned files.',
-                  complete: runCompleted,
-                  active: sidebarStep === 4
-                },
-                {
-                  number: 5,
-                  title: 'Next Batch',
-                  text: 'Move to the next folder and repeat.',
+                  title: 'Review and Export',
+                  text: 'Resolve triage items, export clean folders, then repeat.',
                   complete: nextBatchPrepared,
-                  active: sidebarStep === 5
+                  active: sidebarStep === 4 || sidebarStep === 5
                 }
               ].map((step) => (
                 <div
                   key={step.number}
-                  className={`rounded-lg border px-3 py-2.5 transition-colors ${
+                  className={`rounded-[var(--kiwi-radius)] border px-4 py-3 shadow-[0_8px_22px_rgba(36,65,120,0.06)] transition-colors ${
                     step.complete
-                      ? 'border-[var(--kiwi-green)] bg-[var(--kiwi-green-light)]'
+                      ? 'border-[#b2f2bb] bg-[var(--kiwi-green-light)]'
                       : step.active
-                        ? 'border-[var(--kiwi-blue)] bg-[var(--kiwi-blue-light)]'
+                        ? 'border-[var(--kiwi-blue)] bg-white'
                         : 'border-[var(--kiwi-border)] bg-white/90'
                   }`}
                 >
-                  <div className="mb-1 flex items-center gap-2">
+                  <div className="mb-2 flex items-center gap-2">
                     <span
-                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-[var(--kiwi-radius-sm)] text-sm font-extrabold ${
                         step.complete
                           ? 'bg-[var(--kiwi-green)] text-white'
                           : step.active
@@ -1745,9 +1787,9 @@ export default function SetupPage() {
                     >
                       {step.complete ? '✓' : step.number}
                     </span>
-                    <p className="text-xs font-semibold text-[var(--kiwi-text)]">{step.title}</p>
                   </div>
-                  <p className="text-[11px] text-[var(--kiwi-text-3)]">{step.text}</p>
+                  <p className="text-[15px] font-extrabold leading-snug text-[var(--kiwi-text)]">{step.title}</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-[var(--kiwi-text-2)]">{step.text}</p>
                 </div>
               ))}
             </div>
@@ -1755,19 +1797,19 @@ export default function SetupPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
-          <div className={`${cardClass} h-full space-y-3 p-4 shadow-[0_1px_2px_rgba(36,65,120,0.08)]`}>
+          <div className={`order-1 ${cardClass} h-full space-y-3 p-4`}>
           <div className="mb-2 flex items-center gap-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-blue)] text-xs font-bold text-white">
               1
             </span>
-            <h2 className="text-[15px] font-semibold leading-snug text-[#151726]">Project Basics</h2>
-            <HelpIcon title="Your project keeps the same export location, profile, AI settings, and workspace rules across multiple batches." />
+            <h2 className="text-[15px] font-semibold leading-snug text-[#151726]">Project Setup</h2>
+            <HelpIcon title="Your project keeps KIWI settings and batch history together." />
             <div className="ml-auto flex items-center gap-2">
               <SupportedFileTypesButton />
             </div>
           </div>
           <p className="mb-3 text-[12px] leading-relaxed text-[var(--kiwi-text-3)]">
-            Name the project and choose where KIWI should save exports.
+            Create or load a KIWI project before processing batches.
           </p>
           <Button
             variant="secondary"
@@ -1783,12 +1825,6 @@ export default function SetupPage() {
               <div className="rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-[var(--kiwi-blue-pale)] px-3 py-2 text-sm leading-relaxed">
                 <p className="text-[14px] font-medium text-[#1f2333]">
                   <span className="font-semibold">Project:</span> {projectName || 'Not configured'}
-                </p>
-                <p className="mt-1 text-[14px] font-medium text-[#1f2333]">
-                  <span className="font-semibold">Export Folder:</span> {resolvedOutputPath || 'Not configured'}
-                </p>
-                <p className="mt-1 text-[14px] font-medium text-[#1f2333]">
-                  <span className="font-semibold">Export Profile:</span> {profileLabel[form.exportProfile]}
                 </p>
                 <p className="mt-2 font-semibold text-[var(--kiwi-green)]">✔ Project saved</p>
               </div>
@@ -1809,6 +1845,9 @@ export default function SetupPage() {
             </div>
           ) : (
             <div className="space-y-3">
+              <p className="rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--kiwi-text-2)]">
+                Project status: {projectState === 'editing' ? 'Unsaved changes' : 'Unsaved'}
+              </p>
               <div>
                 <label className={`mb-1 flex items-center gap-1.5 ${labelClass}`}>
                   Project Name
@@ -1822,38 +1861,10 @@ export default function SetupPage() {
                   readOnly={projectFieldsLocked}
                 />
               </div>
-
-              <div className="space-y-1">
-                <label className={`flex items-center gap-1.5 ${labelClass}`}>
-                  Export folder
-                  <HelpIcon title="This is where KIWI saves the organized output. Keep this the same for all batches in one project." />
-                </label>
-                <Input
-                  placeholder="C:\\Users\\YourName\\Documents\\KIWI\\export\\my_export"
-                  value={form.outputFolderPath}
-                  onChange={(e) => {
-                    const value = e.target.value
-                    setForm({ ...form, outputFolderPath: value })
-                    setExportBase(value)
-                    localStorage.setItem('kiwi_export_base', value)
-                  }}
-                  className={`${inputClass} font-mono`}
-                  readOnly={projectFieldsLocked}
-                />
-                {resolvedOutputPath ? (
-                  <p className="font-mono text-xs text-[var(--kiwi-text-2)]">
-                    → {resolvedOutputPath}
-                  </p>
-                ) : null}
-                <p className={`text-xs text-[var(--kiwi-text-3)]`}>
-                  Organized exports will be saved here under anythingllm/ or open_webui/ subfolders.
-                </p>
-              </div>
-
               <div>
                 <label className={`mb-1 flex items-center gap-1.5 ${labelClass}`}>
                   Export profile
-                  <HelpIcon title="Choose the format KIWI should prepare for upload into tools like AnythingLLM or Open WebUI." />
+                  <HelpIcon title="Choose the format KIWI should prepare for upload into tools like AnythingLLM or Open WebUI. Click Update Project after changing it." />
                 </label>
                 <Select
                   className={selectClass}
@@ -1866,8 +1877,7 @@ export default function SetupPage() {
                   <option value="both">Both</option>
                 </Select>
               </div>
-
-              {statusMessage ? (
+              {statusMessage && !statusMessage.startsWith('Scanning files from:') ? (
                 <div className="flex items-center gap-2 text-sm text-[var(--kiwi-text-2)]">
                   {loading ? (
                     <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[var(--kiwi-border)] border-t-[var(--kiwi-blue)]" />
@@ -1891,6 +1901,50 @@ export default function SetupPage() {
               </Button>
             </div>
           )}
+          <div className="border-t border-[var(--kiwi-border)] pt-3">
+            <p className="mb-1.5 text-xs font-semibold text-[var(--kiwi-text-2)]">Project Tools</p>
+            <div className="space-y-1 rounded-xl border border-[var(--kiwi-border)] bg-white p-3 text-[12.5px]">
+              <button
+                type="button"
+                onClick={() => setLoadExistingOpen((o) => !o)}
+                className="block w-full rounded-[var(--kiwi-radius-sm)] p-2 text-left text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-blue-pale)] hover:text-[var(--kiwi-blue)]"
+              >
+                Load Existing Project
+              </button>
+              <button
+                type="button"
+                onClick={handleResetLocalSetupData}
+                className="block w-full rounded-[var(--kiwi-radius-sm)] p-2 text-left text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-red-light)] hover:text-[var(--kiwi-red)]"
+              >
+                Clear Existing Data
+              </button>
+            </div>
+            {loadExistingOpen ? (
+              <ExistingProjectPanel
+                loadExistingOpen={loadExistingOpen}
+                existingPath={existingPath}
+                loading={loading}
+                onToggle={() => setLoadExistingOpen((o) => !o)}
+                onPathChange={setExistingPath}
+                onPastePath={async () => {
+                  try {
+                    const text = await navigator.clipboard.readText()
+                    if (text && (text.includes('\\') || text.includes('/'))) {
+                      setExistingPath(text.trim())
+                      setError('')
+                    }
+                  } catch {
+                    // clipboard not available
+                  }
+                }}
+                onClearPath={() => {
+                  setExistingPath('')
+                  setError('')
+                }}
+                onReload={handleReload}
+              />
+            ) : null}
+          </div>
           {showPathTip ? (
             <PathTipBanner
               onDismiss={() => {
@@ -1902,7 +1956,7 @@ export default function SetupPage() {
         </div>
 
         <div
-          className={`${cardClass} h-full p-4 shadow-[0_1px_2px_rgba(36,65,120,0.08)] transition-colors ${
+          className={`order-2 ${cardClass} h-full p-4 shadow-[0_1px_2px_rgba(36,65,120,0.08)] transition-colors ${
             step2Disabled
               ? 'border-l-4 border-l-[var(--kiwi-text-3)] bg-[var(--kiwi-blue-pale)]/40 opacity-80'
               : `border-l-4 ${projectState === 'saved' ? 'border-l-[var(--kiwi-blue)] bg-[var(--kiwi-blue-light)]/35' : 'border-l-[var(--kiwi-blue)]'}`
@@ -1912,11 +1966,11 @@ export default function SetupPage() {
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-blue)] text-xs font-bold text-white">
               2
             </span>
-            <h2 className="text-[15px] font-semibold leading-snug text-[#151726]">Batch Source</h2>
-            <HelpIcon title="This is the only folder you change when moving from batch_001 to batch_002." />
+            <h2 className="text-[15px] font-semibold leading-snug text-[#151726]">Folder Targets</h2>
+            <HelpIcon title="Set where files come from and where KIWI should save processed output." />
           </div>
           <p className="mb-3 text-[12px] leading-relaxed text-[var(--kiwi-text-3)]">
-            Choose the folder KIWI should scan and set the next batch name.
+            Choose source folders and export destinations for this batch.
           </p>
           {step2Disabled ? (
             <p className="mb-2 rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white px-3 py-2 text-xs text-[var(--kiwi-text-2)]">
@@ -1924,7 +1978,9 @@ export default function SetupPage() {
             </p>
           ) : null}
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
+            <div className="space-y-2.5">
+              <p className="inline-flex bg-[#123755] px-3 py-0.5 text-base font-semibold leading-tight text-white">Import Path</p>
             <div>
               <label className={`mb-1 flex items-center gap-1.5 ${labelClass}`}>
                 Import path
@@ -1956,13 +2012,6 @@ export default function SetupPage() {
                 readOnly={running}
               />
             </div>
-            <p className="rounded bg-[#eef2ff] px-3 py-1.5 text-[12px] leading-relaxed text-[#2d3f99]">
-              <span className="font-medium text-[var(--kiwi-text-2)]">Batch to scan:</span>
-              <span className="mt-0.5 block font-mono text-[13px] font-medium text-[#1f2333]">{importPath || 'Not configured'}</span>
-            </p>
-            <p className="rounded bg-[#f8f9fc] px-3 py-1.5 font-mono text-[11px] leading-relaxed text-[var(--kiwi-text-2)]">
-              Debug - last scan: {lastScanTargetPath || 'No scan yet'}
-            </p>
             {showScanAction ? (
               <Button
                 type="button"
@@ -1973,27 +2022,55 @@ export default function SetupPage() {
                 {loading && statusMessage.startsWith('Scanning files from:') ? 'Scanning...' : 'Scan Batch'}
               </Button>
             ) : null}
-            {hasActiveProject ? (
-              <Button
-                variant="secondary"
-                type="button"
-                className={secondaryButtonClass}
-                onClick={handleSaveProject}
-                disabled={loading || !canSaveProject}
-              >
-                {loading && statusMessage === 'Saving project...' ? 'Updating project...' : 'Update Project'}
-              </Button>
-            ) : null}
             {scanSucceeded ? (
               <p className="text-xs text-[var(--kiwi-green)]">
-                ✓ Found {lastScannedFileCount} files in {lastScannedBatchName || currentBatchName || 'current batch'}. Continue to Step 3.
+                Found {lastScannedFileCount} files in {lastScannedBatchName || currentBatchName || 'current batch'}. Continue to Step 3.
               </p>
             ) : null}
+            {statusMessage.startsWith('Scanning files from:') ? (
+              <div className="flex items-center gap-2 text-xs text-[var(--kiwi-text-2)]">
+                {loading ? (
+                  <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[var(--kiwi-border)] border-t-[var(--kiwi-blue)]" />
+                ) : null}
+                <span>{statusMessage}</span>
+              </div>
+            ) : null}
+            </div>
+
+            <div className="border-t border-[var(--kiwi-border)] pt-3">
+              <p className="mb-2 inline-flex bg-[#123755] px-3 py-0.5 text-base font-semibold leading-tight text-white">Export Path</p>
+              <div className="space-y-2.5">
+                <div className="space-y-1">
+                  <label className={`flex items-center gap-1.5 ${labelClass}`}>
+                    Export folder
+                    <HelpIcon title="This is where KIWI saves the organized output. Keep this the same for all batches in one project." />
+                  </label>
+                  <Input
+                    placeholder="C:\\Users\\YourName\\Documents\\KIWI\\export\\my_export"
+                    value={form.outputFolderPath}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setForm({ ...form, outputFolderPath: value })
+                      setExportBase(value)
+                      localStorage.setItem('kiwi_export_base', value)
+                    }}
+                    className={`${inputClass} font-mono`}
+                    readOnly={running}
+                  />
+                  {resolvedOutputPath ? (
+                    <p className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-xs text-[var(--kiwi-text-2)]">
+                      {resolvedOutputPath}
+                    </p>
+                  ) : null}
+                </div>
+
+              </div>
+            </div>
           </div>
         </div>
 
         <div
-          className={`h-full p-4 ${cardClass} shadow-[0_1px_2px_rgba(36,65,120,0.08)] transition-colors ${
+          className={`order-3 h-full p-4 ${cardClass} shadow-[0_1px_2px_rgba(36,65,120,0.08)] transition-colors ${
             step3Disabled
               ? 'border-l-4 border-l-[var(--kiwi-text-3)] bg-[var(--kiwi-blue-pale)]/40 opacity-80'
               : 'border-l-4 border-l-[var(--kiwi-green)]'
@@ -2003,12 +2080,45 @@ export default function SetupPage() {
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-blue)] text-xs font-bold text-white">
               3
             </span>
-            <h3 className="text-[15px] font-semibold leading-snug text-[#151726]">Review & Run</h3>
+            <h3 className="text-[17px] font-extrabold leading-snug text-[#151726]">Batch Run</h3>
             <HelpIcon title="Run Batch processes the scanned files using your current settings." />
+            <span
+              className={`ml-auto inline-flex rounded-full px-3 py-1 text-xs font-extrabold ${
+                canRunBatch || canStartNextBatch
+                  ? 'bg-[var(--kiwi-green-light)] text-[var(--kiwi-green)]'
+                  : backendHealthy === false
+                    ? 'bg-[var(--kiwi-red-light)] text-[var(--kiwi-red)]'
+                    : 'bg-[#eef0f7] text-[var(--kiwi-text-2)]'
+              }`}
+            >
+              {canStartNextBatch ? 'Complete' : canRunBatch ? 'Ready' : backendHealthy === false ? 'Offline' : 'Waiting'}
+            </span>
           </div>
           <p className="mb-3 text-[12px] leading-relaxed text-[var(--kiwi-text-3)]">
-            Confirm settings, then run the scanned batch.
+            Confirm AI settings and run the scanned batch.
           </p>
+          <div className="mb-3 grid grid-cols-2 gap-2 xl:grid-cols-4">
+            {[
+              { label: 'Total files', value: batchDashboardStats.total },
+              { label: 'Classified', value: batchDashboardStats.classified },
+              { label: 'Needs review', value: batchDashboardStats.needsReview },
+              { label: 'Duplicates', value: batchDashboardStats.duplicates }
+            ].map((metric) => (
+              <div
+                key={metric.label}
+                className="rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white px-3 py-2 shadow-[0_4px_14px_rgba(36,65,120,0.04)]"
+              >
+                <span className="block text-[10px] font-extrabold uppercase text-[var(--kiwi-text-3)]">{metric.label}</span>
+                <strong className="mt-1 block text-[24px] leading-none text-[var(--kiwi-text)]">{metric.value}</strong>
+              </div>
+            ))}
+          </div>
+          <div className="mb-4 h-2.5 overflow-hidden rounded-full bg-[#eef0f7]" aria-label="Batch run progress">
+            <span
+              className="block h-full rounded-full bg-[var(--kiwi-green)] transition-all duration-300"
+              style={{ width: `${batchDashboardStats.progress}%` }}
+            />
+          </div>
           {!hasActiveProject ? (
             <p className="mb-2 rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white px-3 py-1.5 text-xs text-[var(--kiwi-text-2)]">
               Save your project first.
@@ -2028,7 +2138,14 @@ export default function SetupPage() {
                 Review settings before running
                 <HelpIcon title="Confirm AI, model, workspace, and export settings before processing files." />
               </span>
-              <span>{reviewSettingsOpen ? '▲' : '▼'}</span>
+              <span className="flex items-center gap-2">
+                <span className={expandPillClass}>{reviewSettingsOpen ? 'Collapse' : 'Expand'}</span>
+                {reviewSettingsOpen ? (
+                  <ChevronDown className="h-4 w-4 text-[var(--kiwi-blue)]" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-[var(--kiwi-blue)]" />
+                )}
+              </span>
             </button>
             <div className="border-t border-[var(--kiwi-border)] px-3 py-2">
               <p className="text-xs font-medium leading-relaxed text-[#1f2333]">
@@ -2186,54 +2303,12 @@ export default function SetupPage() {
           {queueError ? <p className="mt-2 text-xs text-[var(--kiwi-red)]">{queueError}</p> : null}
           {runMessage ? <p className="mt-2 text-xs text-[var(--kiwi-green)]">{runMessage}</p> : null}
           <div className="mt-3 border-t border-[var(--kiwi-border)] pt-3">
-            <p className="mb-1.5 text-xs font-semibold text-[var(--kiwi-text-2)]">Project Tools</p>
-            <div className="space-y-1 rounded-xl border border-[var(--kiwi-border)] bg-white p-3 text-[12.5px]">
-              <button
-                type="button"
-                onClick={() => setLoadExistingOpen((o) => !o)}
-                className="block w-full rounded-[var(--kiwi-radius-sm)] p-2 text-left text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-blue-pale)] hover:text-[var(--kiwi-blue)]"
-              >
-                Load Existing Project
-              </button>
-              <Link
-                href="/settings"
-                className="block rounded-[var(--kiwi-radius-sm)] p-2 text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-blue-pale)] hover:text-[var(--kiwi-blue)]"
-              >
-                Advanced Setup
-              </Link>
-              <button
-                type="button"
-                onClick={handleResetLocalSetupData}
-                className="block w-full rounded-[var(--kiwi-radius-sm)] p-2 text-left text-[var(--kiwi-text-2)] hover:bg-[var(--kiwi-red-light)] hover:text-[var(--kiwi-red)]"
-              >
-                Clear Saved Data
-              </button>
-            </div>
-            {loadExistingOpen ? (
-              <ExistingProjectPanel
-                loadExistingOpen={loadExistingOpen}
-                existingPath={existingPath}
-                loading={loading}
-                onToggle={() => setLoadExistingOpen((o) => !o)}
-                onPathChange={setExistingPath}
-                onPastePath={async () => {
-                  try {
-                    const text = await navigator.clipboard.readText()
-                    if (text && (text.includes('\\') || text.includes('/'))) {
-                      setExistingPath(text.trim())
-                      setError('')
-                    }
-                  } catch {
-                    // clipboard not available
-                  }
-                }}
-                onClearPath={() => {
-                  setExistingPath('')
-                  setError('')
-                }}
-                onReload={handleReload}
-              />
-            ) : null}
+            <Link
+              href="/settings"
+              className="inline-flex rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-blue)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#2f4ac5]"
+            >
+              Advanced Setup
+            </Link>
           </div>
         </div>
         </section>
@@ -2250,87 +2325,155 @@ export default function SetupPage() {
             className="flex w-full items-start justify-between gap-3 rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-blue-pale)] px-3 py-2 text-left"
           >
             <span>
-              <span className="block text-sm font-semibold text-[var(--kiwi-text)]">Review AI & Classification Settings</span>
+              <span className="block text-sm font-semibold text-[var(--kiwi-text)]">AI & Keyword Settings</span>
               <span className="mt-1 block text-xs font-medium text-[var(--kiwi-text-2)]">
                 Confirm model, AI mode, and export profile before running this batch.
               </span>
             </span>
-            {leftReviewSettingsOpen ? (
-              <ChevronDown className="h-4 w-4 text-[var(--kiwi-text-2)]" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-[var(--kiwi-text-2)]" />
-            )}
+            <span className="flex items-center gap-2">
+              <span className={expandPillClass}>{leftReviewSettingsOpen ? 'Collapse' : 'Expand'}</span>
+              {leftReviewSettingsOpen ? (
+                <ChevronDown className="h-4 w-4 text-[var(--kiwi-blue)]" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-[var(--kiwi-blue)]" />
+              )}
+            </span>
           </button>
           {!leftReviewSettingsOpen ? (
             <p className="mt-2 rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-blue-pale)] px-3 py-2 text-xs text-[var(--kiwi-text-2)]">
               Provider: {aiProvider} · Model: {aiModel} · Mode: {aiMode} · Export: {profileLabel[form.exportProfile]}
             </p>
           ) : (
-            <div className="mt-3 grid grid-cols-1 gap-3 border-t border-[var(--kiwi-border)] pt-3 md:grid-cols-2 xl:grid-cols-3">
-              <div className="space-y-1">
-                <label className={labelClass}>Provider</label>
-                <Select className={selectClass} value={aiProvider} onChange={(e) => setAiProvider(e.target.value)}>
-                  <option value="ollama">Ollama</option>
-                  <option value="claude">Claude (Anthropic)</option>
-                  <option value="openai">OpenAI</option>
-                </Select>
+            <div className="mt-3 space-y-3 border-t border-[var(--kiwi-border)] pt-3">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div className="min-w-0 space-y-3">
+                  <h3 className="text-sm font-semibold text-[var(--kiwi-text)]">Review AI Settings</h3>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label className={labelClass}>Provider</label>
+                      <Select className={selectClass} value={aiProvider} onChange={(e) => setAiProvider(e.target.value)}>
+                        <option value="ollama">Ollama</option>
+                        <option value="claude">Claude (Anthropic)</option>
+                        <option value="openai">OpenAI</option>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className={labelClass}>Model</label>
+                      <Select className={selectClass} value={aiModel} onChange={(e) => setAiModel(e.target.value)}>
+                        {availableModels.map((model) => (
+                          <option key={model} value={model}>
+                            {model}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className={labelClass}>AI Mode</label>
+                      <Select className={selectClass} value={aiMode} onChange={(e) => setAiMode(e.target.value)}>
+                        <option value="rules_only">rules_only</option>
+                        <option value="ai_only_unclassified">ai_only_unclassified</option>
+                        <option value="ai_all">ai_all</option>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className={labelClass}>Export Profile</label>
+                      <Select
+                        className={selectClass}
+                        value={form.exportProfile}
+                        onChange={(e) => setForm({ ...form, exportProfile: e.target.value as typeof form.exportProfile })}
+                      >
+                        <option value="anythingllm">AnythingLLM</option>
+                        <option value="open_webui">Open WebUI</option>
+                        <option value="both">Both</option>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="secondary" type="button" className={secondaryButtonClass} onClick={handleRefreshModels} disabled={aiBusy}>
+                      Refresh Models
+                    </Button>
+                    <Button variant="secondary" type="button" className="!rounded-[var(--kiwi-radius)] !border !border-[var(--kiwi-blue)] !bg-[var(--kiwi-blue)] !px-4 !py-2 !text-sm !font-semibold !text-white hover:!bg-[#2f4ac5]" onClick={handleTestConnection} disabled={aiBusy}>
+                      Test Connection
+                    </Button>
+                    <Button type="button" className={`${primaryButtonClass} !w-auto`} onClick={handleSaveInlineAiSettings} disabled={savingAiSettings || !sessionToken}>
+                      {savingAiSettings ? 'Saving...' : 'Save AI Settings'}
+                    </Button>
+                  </div>
+                  {aiStatus ? (
+                    <p
+                      className={`rounded-[var(--kiwi-radius-sm)] px-3 py-2 text-xs font-medium ${
+                        /fail|error|not|unable|could not|offline/i.test(aiStatus)
+                          ? 'bg-[var(--kiwi-red-light)] text-[var(--kiwi-red)]'
+                          : 'bg-[var(--kiwi-green-light)] text-[var(--kiwi-green)]'
+                      }`}
+                    >
+                      {aiStatus}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="min-w-0 space-y-3">
+                  <h3 className="text-sm font-semibold text-[var(--kiwi-text)]">Keyword Suggestions</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="secondary" type="button" className={secondaryButtonClass} onClick={handleSuggestCategories} disabled={suggestionBusy}>
+                      Suggest Categories from Scanned Files
+                    </Button>
+                    <Button variant="secondary" type="button" className={secondaryButtonClass} onClick={handleApplySuggestions} disabled={suggestionBusy}>
+                      Apply Suggestions
+                    </Button>
+                  </div>
+                  {suggestionStatus ? (
+                    <p className="rounded-[var(--kiwi-radius-sm)] bg-[var(--kiwi-blue-pale)] px-3 py-2 text-xs text-[var(--kiwi-text-2)]">{suggestionStatus}</p>
+                  ) : null}
+                  <div className="max-h-52 overflow-y-auto rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white p-3">
+                    {[
+                      ...Object.entries((aiRules?.WORKSPACES ?? {}) as Record<string, unknown>).map(([key, value]) => `Workspace: ${key} -> ${String(value)}`),
+                      ...Object.entries((aiRules?.COMPANY_MAP ?? {}) as Record<string, unknown>).map(([key, value]) => `Company: ${key} -> ${String(value)}`),
+                      ...Object.entries((aiRules?.PROJECT_MAP ?? {}) as Record<string, unknown>).map(([key, value]) => `Project: ${key} -> ${String(value)}`)
+                    ].length ? (
+                      <ul className="space-y-1.5 text-xs text-[var(--kiwi-text-2)]">
+                        {[
+                          ...Object.entries((aiRules?.WORKSPACES ?? {}) as Record<string, unknown>).map(([key, value]) => `Workspace: ${key} -> ${String(value)}`),
+                          ...Object.entries((aiRules?.COMPANY_MAP ?? {}) as Record<string, unknown>).map(([key, value]) => `Company: ${key} -> ${String(value)}`),
+                          ...Object.entries((aiRules?.PROJECT_MAP ?? {}) as Record<string, unknown>).map(([key, value]) => `Project: ${key} -> ${String(value)}`)
+                        ].map((item) => (
+                          <li key={item} className="break-words rounded bg-[#f8f9fc] px-2 py-1">
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-[var(--kiwi-text-3)]">No keyword suggestions loaded yet.</p>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Model</label>
-                <Select className={selectClass} value={aiModel} onChange={(e) => setAiModel(e.target.value)}>
-                  {availableModels.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>AI mode</label>
-                <Select className={selectClass} value={aiMode} onChange={(e) => setAiMode(e.target.value)}>
-                  <option value="rules_only">rules_only</option>
-                  <option value="ai_only_unclassified">ai_only_unclassified</option>
-                  <option value="ai_all">ai_all</option>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Export profile</label>
-                <Select
-                  className={selectClass}
-                  value={form.exportProfile}
-                  onChange={(e) => setForm({ ...form, exportProfile: e.target.value as typeof form.exportProfile })}
+
+              <div className="rounded-[var(--kiwi-radius-sm)] border border-[var(--kiwi-border)] bg-white">
+                <button
+                  type="button"
+                  onClick={() => setAdvancedAiDetailsOpen((prev) => !prev)}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-xs font-semibold text-[var(--kiwi-text-2)]"
                 >
-                  <option value="anythingllm">AnythingLLM</option>
-                  <option value="open_webui">Open WebUI</option>
-                  <option value="both">Both</option>
-                </Select>
+                  <span>Advanced AI Details</span>
+                  <span className="flex items-center gap-2">
+                    <span className={expandPillClass}>{advancedAiDetailsOpen ? 'Collapse' : 'Expand'}</span>
+                    {advancedAiDetailsOpen ? (
+                      <ChevronDown className="h-4 w-4 text-[var(--kiwi-blue)]" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-[var(--kiwi-blue)]" />
+                    )}
+                  </span>
+                </button>
+                {advancedAiDetailsOpen ? (
+                  <div className="space-y-2 border-t border-[var(--kiwi-border)] px-3 py-3">
+                    {aiStatus ? <p className="text-xs text-[var(--kiwi-text-2)]">{aiStatus}</p> : null}
+                    <Link href="/settings" className="text-xs text-[var(--kiwi-blue)] hover:underline">
+                      Open full settings
+                    </Link>
+                  </div>
+                ) : null}
               </div>
-              <div className="flex flex-wrap items-end gap-2 md:col-span-2 xl:col-span-2">
-                <Button variant="secondary" type="button" className={secondaryButtonClass} onClick={handleRefreshModels} disabled={aiBusy}>
-                  Refresh Models
-                </Button>
-                <Button variant="secondary" type="button" className={secondaryButtonClass} onClick={handleTestConnection} disabled={aiBusy}>
-                  Test Connection
-                </Button>
-                <Button type="button" className={`${primaryButtonClass} !w-auto`} onClick={handleSaveInlineAiSettings} disabled={savingAiSettings || !sessionToken}>
-                  {savingAiSettings ? 'Saving...' : 'Save AI Settings'}
-                </Button>
-              </div>
-              <div className="flex flex-wrap items-end gap-2 md:col-span-2 xl:col-span-3">
-                <Button variant="secondary" type="button" className={secondaryButtonClass} onClick={handleSuggestCategories} disabled={suggestionBusy}>
-                  Suggest Categories from Scanned Files
-                </Button>
-                <Button variant="secondary" type="button" className={secondaryButtonClass} onClick={handleApplySuggestions} disabled={suggestionBusy}>
-                  Apply Suggestions
-                </Button>
-                <Link href="/settings" className="text-xs text-[var(--kiwi-blue)] hover:underline">
-                  Open full settings
-                </Link>
-              </div>
-              {aiStatus ? <p className="text-xs text-[var(--kiwi-text-2)] md:col-span-2 xl:col-span-3">{aiStatus}</p> : null}
-              {suggestionStatus ? (
-                <p className="text-xs text-[var(--kiwi-text-2)] md:col-span-2 xl:col-span-3">{suggestionStatus}</p>
-              ) : null}
             </div>
           )}
         </section>
@@ -2398,10 +2541,18 @@ export default function SetupPage() {
         <section className={`${cardClass} shrink-0 space-y-1.5 p-4 shadow-[0_1px_2px_rgba(36,65,120,0.08)]`}>
           <button
             type="button"
-            className="w-full text-left pb-1.5 text-[13px] font-semibold text-[#151726] border-b border-[var(--kiwi-border)]"
+            className="flex w-full items-center justify-between gap-3 border-b border-[var(--kiwi-border)] pb-1.5 text-left text-[13px] font-semibold text-[#151726]"
             onClick={() => setPendingOpen((prev) => !prev)}
           >
-            Pending Queue ({filteredPendingQueue.length}/{pendingQueue.length}) {pendingOpen ? '▲' : '▼'}
+            <span>Pending Queue ({filteredPendingQueue.length}/{pendingQueue.length})</span>
+            <span className="flex items-center gap-2">
+              <span className={expandPillClass}>{pendingOpen ? 'Collapse' : 'Expand'}</span>
+              {pendingOpen ? (
+                <ChevronDown className="h-4 w-4 text-[var(--kiwi-blue)]" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-[var(--kiwi-blue)]" />
+              )}
+            </span>
           </button>
           {pendingOpen ? (
             <>

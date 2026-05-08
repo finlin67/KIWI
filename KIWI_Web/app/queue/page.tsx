@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
@@ -8,6 +8,14 @@ import { SectionLabel } from '@/components/ui/SectionLabel'
 import { clearQueue, getApiBaseUrl, getQueue, getToken, runExport } from '@/lib/api'
 
 export default function QueuePage() {
+  return (
+    <Suspense fallback={null}>
+      <QueuePageContent />
+    </Suspense>
+  )
+}
+
+function QueuePageContent() {
   const searchParams = useSearchParams()
   const [currentBatch, setCurrentBatch] = useState<Record<string, unknown>[]>([])
   const [pendingQueue, setPendingQueue] = useState<Record<string, unknown>[]>([])

@@ -16,7 +16,7 @@ import {
 type BatchMode = 'fixed' | 'pattern'
 type CopyMode = 'copy' | 'move'
 
-const cardClass = 'rounded-xl border border-[var(--kiwi-border)] bg-white shadow-sm'
+const cardClass = 'rounded-[var(--kiwi-radius)] border border-[var(--kiwi-border)] bg-white shadow-[var(--kiwi-shadow)]'
 const labelClass = 'text-xs font-semibold text-[var(--kiwi-text-2)]'
 const inputClass =
   '!rounded-[var(--kiwi-radius-sm)] !border-[var(--kiwi-border-strong)] !bg-white !text-[var(--kiwi-text)] placeholder:!text-[var(--kiwi-text-3)] focus:!border-[var(--kiwi-blue)] focus:!ring-1 focus:!ring-[var(--kiwi-blue)]'
@@ -131,8 +131,8 @@ export default function BatchPrepPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-56px-3rem)] bg-[#f3f4f6] px-3 py-4 md:px-4">
-      <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
+    <div className="min-h-screen bg-[var(--kiwi-bg)]">
+      <div className="mx-auto grid w-full max-w-[1780px] grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
         <section className={`${cardClass} p-5`}>
           <h1 className="text-xl font-bold text-[var(--kiwi-text)]">Batch Your Files</h1>
           <p className="mt-2 text-sm text-[var(--kiwi-text-2)]">

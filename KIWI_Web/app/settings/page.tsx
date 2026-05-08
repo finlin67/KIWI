@@ -11,7 +11,7 @@ import { fetchCategorySuggestions, fetchOllamaModels, getSettings, getToken, sav
 
 type Tab = 'Workspaces' | 'Companies' | 'Projects' | 'Keywords'
 type RulesConfig = Record<string, any>
-const cardClass = '!rounded-xl !border-[var(--kiwi-border)] !bg-white shadow-sm'
+const cardClass = '!rounded-[var(--kiwi-radius)] !border-[var(--kiwi-border)] !bg-white !shadow-[var(--kiwi-shadow)]'
 const sectionHeaderClass =
   'border-b border-[var(--kiwi-border)] pb-2 mb-4 text-[0.65rem] font-bold uppercase tracking-widest text-[var(--kiwi-text-3)]'
 const inputClass =
@@ -397,7 +397,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 bg-[var(--kiwi-bg)]">
+    <div className="mx-auto max-w-[1780px] space-y-5 bg-[var(--kiwi-bg)]">
       <button type="button" onClick={handleBackToHome} className="mb-6 inline-flex items-center gap-1.5 text-sm text-[#3b5bdb] hover:underline">
         ← Back to Home
       </button>
