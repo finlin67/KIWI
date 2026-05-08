@@ -4,7 +4,8 @@
 - KIWI is currently packaged as a Windows local-first V1 using Start Here.bat (recommended).
 - The web UI is the primary operator interface. Desktop/local tooling supports the local processing workflow.
   
-<img width="533" height="300" alt="image" src="https://github.com/user-attachments/assets/76272620-fa7c-41ab-b249-130545a1139d" />
+<img width="533" height="300" alt="image" src="https://github.com/user-attachments/assets/97a1345b-1741-49c1-ac2f-d0bc419265e5" />
+
 
 ## What is KIWI?
 
