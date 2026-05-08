@@ -52,7 +52,7 @@ button {
 .app-shell {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 248px 1fr;
 }
 
 .sidebar {
@@ -64,7 +64,7 @@ button {
   gap: 20px;
   border-right: 1px solid var(--kiwi-border);
   background: #ffffff;
-  padding: 18px;
+  padding: 16px 10px 16px 12px;
 }
 
 .brand {
@@ -98,16 +98,23 @@ button {
 
 .nav-list {
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
 .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--kiwi-text-2);
   font-weight: 650;
-  padding: 10px 12px;
+  padding: 9px 10px;
   text-decoration: none;
+}
+
+.nav-link span:last-child {
+  line-height: 1.1;
 }
 
 .nav-link:hover,
@@ -117,12 +124,33 @@ button {
   color: var(--kiwi-blue);
 }
 
+.nav-icon {
+  display: inline-flex;
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  opacity: 0.72;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.nav-icon svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 1.85;
+}
+
+.nav-link:hover .nav-icon,
+.nav-link.active .nav-icon {
+  opacity: 1;
+  transform: translateX(1px);
+}
+
 .sidebar-panel {
-  margin-top: auto;
+  margin-top: 4px;
   border: 1px solid var(--kiwi-border);
   border-radius: var(--radius);
   background: var(--kiwi-blue-pale);
-  padding: 14px;
+  padding: 12px;
 }
 
 .sidebar-panel p {
@@ -133,6 +161,26 @@ button {
   margin-top: 6px;
   color: var(--kiwi-text-2);
   font-size: 13px;
+}
+
+.sidebar-panel-divider {
+  margin-top: 8px;
+  border-top: 1px dashed var(--kiwi-border-strong);
+  padding-top: 7px;
+  color: var(--kiwi-text);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sidebar-panel a {
+  color: var(--kiwi-blue);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.sidebar-panel a:hover {
+  color: var(--kiwi-blue-dark);
 }
 
 .main {

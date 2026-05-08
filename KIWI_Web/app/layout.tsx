@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
 function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-screen bg-[var(--kiwi-bg)] lg:grid-cols-[280px_1fr]">
+    <div className="grid min-h-screen bg-[var(--kiwi-bg)] lg:grid-cols-[248px_1fr]">
       <Sidebar expertMode={false} onExpertChange={() => undefined} />
       <div className="min-w-0">
         <TopBar />
